@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>agentis · apps</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400;1,9..144,500&family=Quicksand:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0d0a24;
+    --moon: #fff5dc;
+    --accent: #f4c19a;
+    --muted: rgba(255, 245, 220, 0.6);
+    --border: rgba(255, 245, 220, 0.13);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    min-height: 100vh;
+    background:
+      radial-gradient(ellipse 90% 60% at 50% -10%, #4a3b7a 0%, transparent 70%),
+      linear-gradient(180deg, #0d0a24 0%, #161239 100%);
+    color: var(--moon);
+    font-family: 'Quicksand', system-ui, sans-serif;
+    padding: 4rem 1.5rem 3rem;
+    display: flex;
+    justify-content: center;
+  }
+  main { width: 100%; max-width: 620px; }
+  header { margin-bottom: 3rem; }
+  h1 {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-weight: 400;
+    font-size: 58px;
+    letter-spacing: -0.035em;
+    line-height: 1;
+  }
+  h1 .dot { color: var(--accent); margin: 0 0.04em; }
+  .subtitle {
+    margin-top: 12px;
+    color: var(--muted);
+    font-size: 14px;
+    max-width: 440px;
+    line-height: 1.55;
+  }
+  .apps { display: flex; flex-direction: column; gap: 10px; }
+  .app {
+    display: flex;
+    flex-direction: column;
+    padding: 18px 22px;
+    text-decoration: none;
+    color: inherit;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    transition: all 0.25s ease;
+  }
+  .app:hover {
+    border-color: rgba(255, 245, 220, 0.35);
+    background: rgba(255, 245, 220, 0.03);
+    transform: translateY(-1px);
+  }
+  .app-title {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-weight: 500;
+    font-size: 26px;
+    letter-spacing: -0.01em;
+  }
+  .app-desc {
+    margin-top: 5px;
+    color: var(--muted);
+    font-size: 13.5px;
+    line-height: 1.55;
+  }
+  footer {
+    margin-top: 3rem;
+    color: var(--muted);
+    font-size: 12px;
+    opacity: 0.65;
+    letter-spacing: 0.02em;
+  }
+  a { color: inherit; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>agentis<span class="dot">·</span>apps</h1>
+    <p class="subtitle">A small garden of static prototypes and one-off tools.</p>
+  </header>
+  <div class="apps">
+    <a class="app" href="./sleepy-hour/">
+      <span class="app-title">Bed time</span>
+      <span class="app-desc">Tap forty-two cartoon animals into bed, one by one.</span>
+    </a>
+  </div>
+  <footer>
+    <p>github.com/parlin/agentis-apps</p>
+  </footer>
+</main>
+</body>
+</html>
