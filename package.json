@@ -1,0 +1,15 @@
+{
+  "name": "agentis-apps",
+  "private": true,
+  "type": "module",
+  "version": "0.0.0",
+  "description": "Static web artifacts published via GitHub Pages.",
+  "scripts": {
+    "serve": "python3 -m http.server 8080",
+    "smoke": "node scripts/smoke.mjs"
+  },
+  "devDependencies": {
+    "axe-core": "^4.10.0",
+    "playwright": "^1.49.0"
+  }
+}
