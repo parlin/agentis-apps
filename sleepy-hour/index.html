@@ -26,39 +26,7 @@
   html, body { height: 100%; }
 
   body {
-    min-height: 100vh;
-    background:
-      radial-gradient(ellipse 120% 60% at 50% -10%, #4a3b7a 0%, transparent 70%),
-      radial-gradient(ellipse 80% 50% at 50% 110%, #5a3d5a 0%, transparent 70%),
-      linear-gradient(180deg, #0d0a24 0%, #161239 50%, #1a1740 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 1.5rem 1rem;
-    font-family: 'Quicksand', system-ui, sans-serif;
-    color: var(--moonlight);
-    overflow-x: hidden;
-    position: relative;
-  }
-
-  body::before {
-    content: '';
-    position: fixed;
-    inset: -10%;
-    background:
-      radial-gradient(circle at 15% 20%, rgba(255, 245, 220, 0.06), transparent 30%),
-      radial-gradient(circle at 85% 80%, rgba(194, 122, 133, 0.08), transparent 35%);
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  /* ----- Phone frame ----- */
-  .phone {
-    position: relative;
-    width: 390px;
-    max-width: 100%;
-    height: 844px;
-    max-height: calc(100vh - 3rem);
+    min-height: 100dvh;
     background:
       linear-gradient(180deg,
         #1e1748 0%,
@@ -66,28 +34,23 @@
         #553f7f 65%,
         #8a5776 85%,
         #c27a85 100%);
-    border-radius: 52px;
-    overflow: hidden;
-    box-shadow:
-      0 0 0 2px #0a081c,
-      0 0 0 12px #1a1634,
-      0 0 0 13px #2a2550,
-      0 40px 100px rgba(0, 0, 0, 0.55),
-      0 0 140px rgba(150, 120, 200, 0.18);
-    isolation: isolate;
-    z-index: 1;
+    font-family: 'Quicksand', system-ui, sans-serif;
+    color: var(--moonlight);
+    overflow-x: hidden;
+    position: relative;
   }
 
-  .island {
-    position: absolute;
-    top: 11px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 118px;
-    height: 34px;
-    background: #0a081c;
-    border-radius: 20px;
-    z-index: 50;
+  /* ----- App container (borderless, fills viewport) ----- */
+  .app {
+    position: relative;
+    min-height: 100dvh;
+    max-width: 560px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    isolation: isolate;
+    z-index: 1;
   }
 
   .stars { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 1; }
@@ -130,64 +93,15 @@
       -2px 12px 0 -2px rgba(0, 0, 0, 0.06);
   }
 
-  /* Status bar */
-  .status-bar {
-    position: relative;
-    height: 56px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px 34px 0;
-    font-size: 15px;
-    font-weight: 600;
-    z-index: 10;
-    letter-spacing: 0.01em;
-  }
-  .status-bar .indicators {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 13px;
-  }
-  .bars { display: inline-flex; gap: 2px; align-items: flex-end; }
-  .bars i {
-    display: block;
-    width: 3px;
-    background: currentColor;
-    border-radius: 1px;
-  }
-  .bars i:nth-child(1) { height: 4px; }
-  .bars i:nth-child(2) { height: 6px; }
-  .bars i:nth-child(3) { height: 8px; }
-  .bars i:nth-child(4) { height: 10px; }
-  .battery {
-    display: inline-block;
-    width: 24px; height: 12px;
-    border: 1px solid currentColor;
-    border-radius: 3px;
-    position: relative;
-    padding: 1px;
-  }
-  .battery::after {
-    content: '';
-    position: absolute;
-    right: -3px; top: 3px;
-    width: 2px; height: 4px;
-    background: currentColor;
-    border-radius: 0 1px 1px 0;
-  }
-  .battery span {
-    display: block;
-    width: 80%;
-    height: 100%;
-    background: currentColor;
-    border-radius: 1px;
-  }
-
   /* ----- Header (decluttered) ----- */
   .header {
     position: relative;
-    padding: 18px 30px 14px;
+    padding:
+      calc(env(safe-area-inset-top) + 22px)
+      calc(env(safe-area-inset-right) + 26px)
+      14px
+      calc(env(safe-area-inset-left) + 26px);
+    flex-shrink: 0;
     z-index: 5;
   }
   .header h1 {
@@ -211,11 +125,15 @@
   /* ----- Beds grid ----- */
   .beds {
     position: relative;
-    padding: 16px 14px 26px;
+    padding:
+      14px
+      calc(env(safe-area-inset-right) + 14px)
+      calc(env(safe-area-inset-bottom) + 26px)
+      calc(env(safe-area-inset-left) + 14px);
     display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    gap: 7px;
-    height: calc(100% - 170px);
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    flex: 1;
     overflow-y: auto;
     z-index: 5;
     scrollbar-width: none;
@@ -232,7 +150,7 @@
     border: none;
     padding: 0;
     cursor: pointer;
-    overflow: hidden;
+    /* overflow stays visible so Zzz can drift above the cell */
     user-select: none;
     -webkit-tap-highlight-color: transparent;
     font: inherit;
@@ -330,39 +248,44 @@
   .bed.tucked .mouth-awake { opacity: 0; transition-delay: 0s; }
   .bed.tucked .mouth-asleep { opacity: 1; transition-delay: 0.5s; }
 
-  /* Zzz — 0–3 letters drifting up, varied per bed */
+  /* Zzz — 0–3 letters drifting up from above the animal head, visible and varied */
   .zzz {
     position: absolute;
-    top: 0;
-    right: 3px;
-    width: 18px;
-    height: 22px;
+    top: 6px;
+    right: 6px;
+    width: 30px;
+    height: 40px;
     pointer-events: none;
-    z-index: 5;
+    z-index: 6;
   }
   .zzz span {
     position: absolute;
+    right: 0;
+    bottom: 0;
     font-family: 'Fraunces', serif;
     font-style: italic;
     font-weight: 700;
+    line-height: 1;
     color: var(--moonlight);
     opacity: 0;
-    text-shadow: 0 0 5px rgba(255, 245, 220, 0.7);
-    bottom: 0; right: 0;
+    text-shadow:
+      0 0 6px rgba(255, 245, 220, 0.9),
+      0 0 2px rgba(255, 245, 220, 0.7);
   }
-  .zzz span:nth-child(1) { font-size: 8.5px; }
-  .zzz span:nth-child(2) { font-size: 10.5px; }
-  .zzz span:nth-child(3) { font-size: 13px; }
+  .zzz span:nth-child(1) { font-size: 11px; }
+  .zzz span:nth-child(2) { font-size: 14px; }
+  .zzz span:nth-child(3) { font-size: 17px; }
   .bed.tucked .zzz span {
-    animation: zzz-drift 2.6s ease-in-out infinite;
+    animation: zzz-drift 2.4s ease-in-out infinite;
   }
   .bed.tucked .zzz span:nth-child(1) { animation-delay: 0s; }
-  .bed.tucked .zzz span:nth-child(2) { animation-delay: 0.9s; }
-  .bed.tucked .zzz span:nth-child(3) { animation-delay: 1.8s; }
+  .bed.tucked .zzz span:nth-child(2) { animation-delay: 0.8s; }
+  .bed.tucked .zzz span:nth-child(3) { animation-delay: 1.6s; }
   @keyframes zzz-drift {
-    0%   { opacity: 0; transform: translate(0, 4px) rotate(-10deg) scale(0.5); }
-    30%  { opacity: 1; }
-    100% { opacity: 0; transform: translate(9px, -20px) rotate(16deg) scale(1.2); }
+    0%   { opacity: 0; transform: translate(0, 10px) rotate(-12deg) scale(0.45); }
+    15%  { opacity: 1; }
+    80%  { opacity: 0.9; transform: translate(12px, -22px) rotate(14deg) scale(1.1); }
+    100% { opacity: 0; transform: translate(18px, -34px) rotate(22deg) scale(1.3); }
   }
 
   /* ----- Wake-up happy animations (each bed gets one) ----- */
@@ -573,26 +496,13 @@
     letter-spacing: 0.02em;
   }
   .finale .wake-hint.visible { opacity: 0.55; }
-
-  @media (max-height: 900px) {
-    .phone { max-height: 92vh; }
-  }
 </style>
 </head>
 <body>
 
-<main class="phone" aria-label="Bed time bedtime prototype">
-  <div class="island" aria-hidden="true"></div>
+<main class="app" aria-label="Bed time">
   <div class="stars" id="stars" aria-hidden="true"></div>
   <div class="moon" aria-hidden="true"></div>
-
-  <div class="status-bar" aria-hidden="true">
-    <span>9:41</span>
-    <div class="indicators">
-      <span class="bars"><i></i><i></i><i></i><i></i></span>
-      <span class="battery"><span></span></span>
-    </div>
-  </div>
 
   <header class="header">
     <h1>Bed time<span class="dot">.</span></h1>
@@ -604,7 +514,7 @@
   <div class="finale" id="finale" role="dialog" aria-hidden="true">
     <div class="finale-moon"></div>
     <h2>Sweet dreams<span class="dot">.</span></h2>
-    <p>All forty-two friends are snoozing peacefully under the quiet moon.</p>
+    <p>All your friends are snoozing peacefully under the quiet moon.</p>
     <div class="finale-actions">
       <button id="wakeBtn" disabled>Resting · 20s</button>
       <span class="wake-hint" id="wakeHint">Please don't wake them just yet.</span>
@@ -811,12 +721,23 @@
     }
   ];
 
-  /* -------- Build grid: 6 × 7 = 42 beds -------- */
-  const ROWS = 7, COLS = 6, TOTAL = ROWS * COLS;
+  /* -------- Build grid: default 4 × 5 = 20 beds; override via ?cols=N&rows=M (max 7 × 8) -------- */
+  const MAX_COLS = 7, MAX_ROWS = 8;
+  const params = new URLSearchParams(window.location.search);
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+  const parseCount = (raw, fallback, max) => {
+    const n = parseInt(raw, 10);
+    return Number.isFinite(n) && n > 0 ? clamp(n, 1, max) : fallback;
+  };
+  const COLS = parseCount(params.get('cols'), 4, MAX_COLS);
+  const ROWS = parseCount(params.get('rows'), 5, MAX_ROWS);
+  const TOTAL = ROWS * COLS;
+
   const bedsContainer = document.getElementById('beds');
+  bedsContainer.style.gridTemplateColumns = `repeat(${COLS}, 1fr)`;
   const beds = [];
 
-  // distribute animals evenly (7 of each), then shuffle lightly
+  // distribute animals evenly, then shuffle lightly
   const pool = [];
   for (let i = 0; i < TOTAL; i++) pool.push(animals[i % animals.length]);
   // Fisher–Yates shuffle
@@ -859,7 +780,7 @@
   const finale = document.getElementById('finale');
   const wakeBtn = document.getElementById('wakeBtn');
   const wakeHint = document.getElementById('wakeHint');
-  const phone = document.querySelector('.phone');
+  const phone = document.querySelector('.app');
 
   let countdownInterval = null;
 
