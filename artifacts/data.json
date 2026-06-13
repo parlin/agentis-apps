@@ -1,0 +1,13 @@
+{
+  "generatedAt": "2026-06-13T10:56:24.266Z",
+  "deployed": [
+    {
+      "slug": "sleepy-hour",
+      "title": "Bed time",
+      "description": "Tap animals to tuck them in. Default 4×5; pass ?cols=N&rows=M to change the grid.",
+      "url": "https://parlin.github.io/agentis-apps/sleepy-hour/",
+      "lastCommit": "2026-04-24T00:32:53+02:00"
+    }
+  ],
+  "pending": []
+}

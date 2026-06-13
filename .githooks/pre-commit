@@ -1,0 +1,16 @@
+#!/usr/bin/env sh
+# Regenerate artifacts/data.json and stage if changed.
+# Skips on rebase / merge to avoid surprise diffs.
+
+if [ -n "$GIT_REBASE_TODO" ] || [ -f .git/MERGE_HEAD ]; then
+  exit 0
+fi
+
+node scripts/build-artifacts-page.mjs >/dev/null || {
+  echo "pre-commit: build-artifacts-page.mjs failed — skipping" >&2
+  exit 0
+}
+
+if ! git diff --quiet -- artifacts/data.json; then
+  git add artifacts/data.json
+fi

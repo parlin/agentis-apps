@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>agentis · deployed artifacts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400;1,9..144,500&family=Quicksand:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0d0a24;
+    --moon: #fff5dc;
+    --accent: #f4c19a;
+    --muted: rgba(255, 245, 220, 0.6);
+    --dim: rgba(255, 245, 220, 0.4);
+    --border: rgba(255, 245, 220, 0.13);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    min-height: 100dvh;
+    background:
+      radial-gradient(ellipse 90% 60% at 50% -10%, #4a3b7a 0%, transparent 70%),
+      linear-gradient(180deg, #0d0a24 0%, #161239 100%);
+    color: var(--moon);
+    font-family: 'Quicksand', system-ui, sans-serif;
+    padding: 3rem 1.25rem 3rem;
+    display: flex;
+    justify-content: center;
+  }
+  main { width: 100%; max-width: 640px; }
+  header { margin-bottom: 2.25rem; }
+  h1 {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-weight: 400;
+    font-size: 46px;
+    letter-spacing: -0.035em;
+    line-height: 1.05;
+  }
+  h1 .dot { color: var(--accent); margin: 0 0.04em; }
+  .subtitle {
+    margin-top: 10px;
+    color: var(--muted);
+    font-size: 13.5px;
+    line-height: 1.55;
+  }
+  .list { display: flex; flex-direction: column; gap: 10px; min-height: 60px; }
+  .list[aria-busy="true"]::before {
+    content: 'loading…';
+    color: var(--muted);
+    font-size: 13px;
+    font-style: italic;
+  }
+  .item {
+    display: block;
+    padding: 16px 20px;
+    text-decoration: none;
+    color: inherit;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    transition: all 0.25s ease;
+  }
+  .item:hover, .item:focus-visible {
+    border-color: rgba(255, 245, 220, 0.35);
+    background: rgba(255, 245, 220, 0.03);
+    transform: translateY(-1px);
+    outline: none;
+  }
+  .item-title {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-weight: 500;
+    font-size: 22px;
+    letter-spacing: -0.01em;
+    display: block;
+  }
+  .item-desc {
+    margin-top: 4px;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .item-meta {
+    margin-top: 8px;
+    color: var(--dim);
+    font-size: 11.5px;
+    letter-spacing: 0.02em;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 10px;
+  }
+  .item-meta .url {
+    color: var(--accent);
+    opacity: 0.85;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+  }
+  .section-label {
+    margin: 28px 0 10px;
+    color: var(--dim);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+  .pending .item-title { opacity: 0.7; }
+  .empty, .error {
+    color: var(--muted);
+    font-size: 13.5px;
+    font-style: italic;
+    padding: 14px 0;
+  }
+  .error { color: #f4a0a0; }
+  footer {
+    margin-top: 2.5rem;
+    color: var(--dim);
+    font-size: 11.5px;
+    letter-spacing: 0.02em;
+    line-height: 1.55;
+  }
+  footer a { color: inherit; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>agentis<span class="dot">·</span>deployed</h1>
+    <p class="subtitle">Every digital artifact currently live. Tap to open.</p>
+  </header>
+  <div class="list" id="deployed" aria-busy="true" aria-live="polite"></div>
+  <div id="pending-wrap" hidden>
+    <p class="section-label">Pending</p>
+    <div class="list pending" id="pending"></div>
+  </div>
+  <footer>
+    <p id="generated">—</p>
+    <p>github.com/parlin/agentis-apps</p>
+  </footer>
+</main>
+<script>
+  const deployedEl = document.getElementById('deployed');
+  const pendingWrap = document.getElementById('pending-wrap');
+  const pendingEl = document.getElementById('pending');
+  const generatedEl = document.getElementById('generated');
+
+  function timeAgo(iso) {
+    if (!iso) return 'unknown';
+    const then = new Date(iso);
+    if (isNaN(then)) return 'unknown';
+    const s = Math.floor((Date.now() - then.getTime()) / 1000);
+    if (s < 60) return 'just now';
+    if (s < 3600) { const n = Math.floor(s / 60); return `${n} min ago`; }
+    if (s < 86400) { const n = Math.floor(s / 3600); return `${n} hr${n === 1 ? '' : 's'} ago`; }
+    if (s < 604800) { const n = Math.floor(s / 86400); return `${n} day${n === 1 ? '' : 's'} ago`; }
+    if (s < 3024000) { const n = Math.floor(s / 604800); return `${n} wk${n === 1 ? '' : 's'} ago`; }
+    if (s < 31536000) { const n = Math.floor(s / 2592000); return `${n} mo ago`; }
+    const n = Math.floor(s / 31536000);
+    return `${n} yr${n === 1 ? '' : 's'} ago`;
+  }
+
+  function fmtDate(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d)) return '';
+    return d.toISOString().slice(0, 10);
+  }
+
+  function renderItem(it) {
+    const a = document.createElement('a');
+    a.className = 'item';
+    a.href = it.url;
+    a.target = '_blank';
+    a.rel = 'noopener';
+
+    const title = document.createElement('span');
+    title.className = 'item-title';
+    title.textContent = it.title ?? it.slug;
+    a.appendChild(title);
+
+    if (it.description) {
+      const desc = document.createElement('p');
+      desc.className = 'item-desc';
+      desc.textContent = it.description;
+      a.appendChild(desc);
+    }
+
+    const meta = document.createElement('div');
+    meta.className = 'item-meta';
+    if (it.lastCommit) {
+      const recency = document.createElement('span');
+      recency.textContent = `${fmtDate(it.lastCommit)} · ${timeAgo(it.lastCommit)}`;
+      meta.appendChild(recency);
+    }
+    const u = document.createElement('span');
+    u.className = 'url';
+    u.textContent = it.url.replace(/^https?:\/\//, '');
+    meta.appendChild(u);
+    a.appendChild(meta);
+
+    return a;
+  }
+
+  function renderPending(it) {
+    const a = document.createElement('a');
+    a.className = 'item';
+    a.href = it.url || '#';
+    if (it.url) { a.target = '_blank'; a.rel = 'noopener'; }
+    const title = document.createElement('span');
+    title.className = 'item-title';
+    title.textContent = it.title ?? it.slug;
+    a.appendChild(title);
+    const meta = document.createElement('div');
+    meta.className = 'item-meta';
+    const s = document.createElement('span');
+    s.textContent = `status: ${it.status}`;
+    meta.appendChild(s);
+    a.appendChild(meta);
+    return a;
+  }
+
+  fetch('./data.json', { cache: 'no-cache' })
+    .then((r) => {
+      if (!r.ok) throw new Error(`data.json → ${r.status}`);
+      return r.json();
+    })
+    .then((data) => {
+      const deployed = data.deployed ?? [];
+      deployedEl.textContent = '';
+      if (!deployed.length) {
+        const p = document.createElement('p');
+        p.className = 'empty';
+        p.textContent = 'No deployed artifacts yet.';
+        deployedEl.appendChild(p);
+      } else {
+        const frag = document.createDocumentFragment();
+        deployed.forEach((it) => frag.appendChild(renderItem(it)));
+        deployedEl.appendChild(frag);
+      }
+      deployedEl.setAttribute('aria-busy', 'false');
+
+      const pending = data.pending ?? [];
+      if (pending.length) {
+        pendingWrap.hidden = false;
+        const frag = document.createDocumentFragment();
+        pending.forEach((it) => frag.appendChild(renderPending(it)));
+        pendingEl.appendChild(frag);
+      }
+
+      if (data.generatedAt) {
+        generatedEl.textContent = `regenerated ${timeAgo(data.generatedAt)}`;
+      }
+    })
+    .catch((err) => {
+      deployedEl.textContent = '';
+      const p = document.createElement('p');
+      p.className = 'error';
+      p.textContent = `Couldn't load data.json — ${err.message}`;
+      deployedEl.appendChild(p);
+      deployedEl.setAttribute('aria-busy', 'false');
+    });
+</script>
+</body>
+</html>
