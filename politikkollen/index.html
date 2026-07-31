@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Politikkollen — snabba svar om svensk politik</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏛️</text></svg>">
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <h1>Politikkollen <span class="badge">v0</span></h1>
+      <p class="tagline">Snabba, källgrundade svar om svensk politik — direkt från riksdagens och SCB:s öppna API:er.</p>
+    </div>
+  </header>
+
+  <nav class="tabs wrap" role="tablist" aria-label="Sektioner">
+    <button class="tab active" role="tab" aria-selected="true" data-panel="panel-ask">Fråga (AI)</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="panel-anforanden">Anföranden</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="panel-voteringar">Voteringar</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="panel-nyckeltal">Nyckeltal</button>
+  </nav>
+
+  <main class="wrap">
+
+    <!-- Fråga (AI) -->
+    <section id="panel-ask" class="panel active" role="tabpanel">
+      <div id="ask-setup" class="card notice hidden">
+        <h2>Anslut din Claude API-nyckel</h2>
+        <p>AI-svaren körs direkt i din webbläsare mot Anthropics API — appen har ingen server och nyckeln
+           sparas bara lokalt i din webbläsare (<code>localStorage</code>). Skapa en nyckel på
+           <a href="https://platform.claude.com/" target="_blank" rel="noopener">platform.claude.com</a>.</p>
+        <div class="row">
+          <input id="api-key-input" type="password" placeholder="sk-ant-..." autocomplete="off">
+          <button id="api-key-save" class="primary">Spara</button>
+        </div>
+      </div>
+
+      <form id="ask-form" class="ask-form">
+        <textarea id="ask-input" rows="2" placeholder="T.ex. Vad har riksdagen gjort kring elpriskompensation? Hur ser inflationen ut just nu?"></textarea>
+        <div class="row space-between">
+          <div class="suggestions" id="ask-suggestions">
+            <button type="button" class="chip">Vad händer med a-kassan?</button>
+            <button type="button" class="chip">Senaste om kärnkraft i riksdagen</button>
+            <button type="button" class="chip">Hur ser inflationen ut?</button>
+          </div>
+          <div class="row">
+            <button type="button" id="api-key-change" class="ghost small">Byt API-nyckel</button>
+            <button type="submit" class="primary" id="ask-submit">Fråga</button>
+          </div>
+        </div>
+      </form>
+
+      <div id="ask-status" class="status hidden"></div>
+      <div class="result-grid">
+        <article id="ask-answer" class="card answer hidden"></article>
+        <aside id="ask-sources" class="hidden">
+          <h3>Underlag som hämtades</h3>
+          <ul id="ask-sources-list" class="doc-list"></ul>
+        </aside>
+      </div>
+    </section>
+
+    <!-- Anföranden -->
+    <section id="panel-anforanden" class="panel" role="tabpanel" hidden>
+      <form id="anf-form" class="filter-row">
+        <label>Riksmöte
+          <select id="anf-rm"></select>
+        </label>
+        <label>Parti
+          <select id="anf-parti">
+            <option value="">Alla</option>
+          </select>
+        </label>
+        <label class="grow">Filtrera på ord (i rubrik/text)
+          <input id="anf-filter" type="search" placeholder="t.ex. elpriser">
+        </label>
+        <button type="submit" class="primary">Hämta</button>
+      </form>
+      <div id="anf-status" class="status hidden"></div>
+      <ul id="anf-list" class="doc-list"></ul>
+    </section>
+
+    <!-- Voteringar -->
+    <section id="panel-voteringar" class="panel" role="tabpanel" hidden>
+      <form id="vot-form" class="filter-row">
+        <label>Riksmöte
+          <select id="vot-rm"></select>
+        </label>
+        <label>Betänkande
+          <input id="vot-bet" type="text" placeholder="t.ex. AU10" required>
+        </label>
+        <button type="submit" class="primary">Hämta voteringar</button>
+      </form>
+      <p class="hint">Beteckningen hittar du i dokument från riksdagen, t.ex. “bet. 2025/26:AU10”. Ange bara koden (AU10).</p>
+      <div id="vot-status" class="status hidden"></div>
+      <div id="vot-legend" class="legend hidden" aria-hidden="false"></div>
+      <div id="vot-list"></div>
+    </section>
+
+    <!-- Nyckeltal -->
+    <section id="panel-nyckeltal" class="panel" role="tabpanel" hidden>
+      <p class="hint">Officiell statistik hämtad live från SCB:s öppna API (PxWeb).</p>
+      <div id="stat-cards" class="stat-grid"></div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer wrap">
+    <p>Datakällor: <a href="https://www.riksdagen.se/sv/dokument-och-lagar/riksdagens-oppna-data/" target="_blank" rel="noopener">Riksdagens öppna data</a> ·
+       <a href="https://www.scb.se/vara-tjanster/oppna-data/pxwebapi/" target="_blank" rel="noopener">SCB PxWebApi</a>.
+       Appen är helt statisk — all datahämtning sker i din webbläsare. AI-svar kan innehålla fel; kontrollera alltid mot källänkarna.</p>
+  </footer>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

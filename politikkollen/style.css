@@ -1,0 +1,260 @@
+/* Politikkollen v0 — gemensamt layoutsystem, mobil-först.
+   Brytpunkter: 640px (surfplatta) · 960px (desktop) · 1280px (bred desktop).
+   Typografi: Bricolage Grotesque (rubriker) + Instrument Sans (brödtext).
+   Voteringspalett validerad (dataviz-checkar, ljus #fcfcfb & mörk #1a1a19):
+   Ja #047857 · Nej #b91c1c · Avstår #d97706 · Frånvarande = neutral grå
+   (statusfärg; identitet bärs också av etiketter, mellanrum och legend). */
+
+:root {
+  /* Färgtokens */
+  --bg: #faf9f7;
+  --bg-tint: rgba(31, 94, 170, 0.06);
+  --surface: #ffffff;
+  --surface-2: #f4f3f0;
+  --ink: #1c2127;
+  --ink-2: #555e69;
+  --ink-3: #8a929c;
+  --border: #e5e3de;
+  --accent: #1f5eaa;
+  --accent-strong: #174a88;
+  --accent-ink: #ffffff;
+  --ja: #047857;
+  --nej: #b91c1c;
+  --avstar: #d97706;
+  --franv: #9aa1ab;
+  --notice-bg: #eef4fb;
+
+  /* Layouttokens (gemensamma för alla sektioner) */
+  --font-head: "Bricolage Grotesque", "Georgia", serif;
+  --font-body: "Instrument Sans", system-ui, -apple-system, sans-serif;
+  --wrap-max: 42rem;          /* mobil-först; breddas per brytpunkt */
+  --space: 16px;
+  --radius: 14px;
+  --radius-sm: 9px;
+  --shadow: 0 1px 2px rgba(20, 24, 31, 0.05), 0 6px 24px -12px rgba(20, 24, 31, 0.12);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1a1a19;
+    --bg-tint: rgba(110, 168, 232, 0.05);
+    --surface: #232322;
+    --surface-2: #2b2b2a;
+    --ink: #ecebe8;
+    --ink-2: #b3b2ad;
+    --ink-3: #807f7a;
+    --border: #3a3a38;
+    --accent: #6ea8e8;
+    --accent-strong: #8dbcf2;
+    --accent-ink: #10131a;
+    --franv: #6f757e;
+    --notice-bg: #21282f;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 6px 24px -12px rgba(0, 0, 0, 0.5);
+  }
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  background:
+    radial-gradient(60rem 24rem at 50% -8rem, var(--bg-tint), transparent 70%),
+    var(--bg);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+.wrap { max-width: var(--wrap-max); margin: 0 auto; padding: 0 var(--space); }
+a { color: var(--accent); text-underline-offset: 2px; }
+code { font-size: 0.9em; }
+
+h1, h2, h3, .stat-value {
+  font-family: var(--font-head);
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+/* ── Sidhuvud ── */
+.site-header { padding: 32px 0 4px; }
+.site-header h1 { margin: 0; font-size: clamp(1.9rem, 6vw, 2.6rem); font-weight: 800; line-height: 1.1; }
+.badge {
+  font-family: var(--font-body); font-size: 0.72rem; font-weight: 600; vertical-align: 0.5em;
+  padding: 2px 10px; border: 1px solid var(--border); border-radius: 999px;
+  color: var(--ink-2); background: var(--surface);
+}
+.tagline { margin: 10px 0 0; color: var(--ink-2); font-size: 1.02rem; max-width: 38rem; }
+
+/* ── Fliknavigering: klistrad pill-rad, skrollbar på mobil ── */
+.tabs {
+  position: sticky; top: 0; z-index: 10;
+  display: flex; gap: 4px; margin-top: 20px; padding-top: 8px; padding-bottom: 8px;
+  overflow-x: auto; scrollbar-width: none;
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
+}
+.tabs::-webkit-scrollbar { display: none; }
+.tab {
+  appearance: none; background: none; border: 1px solid transparent; border-radius: 999px;
+  padding: 8px 16px; font: inherit; font-weight: 500; white-space: nowrap;
+  color: var(--ink-2); cursor: pointer; transition: color 120ms, background 120ms;
+}
+.tab.active {
+  color: var(--accent-ink); background: var(--accent); font-weight: 600;
+}
+.tab:not(.active):hover { color: var(--ink); background: var(--surface-2); }
+
+.panel { padding: 24px 0 48px; }
+.panel[hidden] { display: none; }
+
+/* ── Gemensamma byggstenar ── */
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 18px 20px; margin: 12px 0;
+  box-shadow: var(--shadow);
+}
+.notice { background: var(--notice-bg); }
+.hidden { display: none !important; }
+
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.space-between { justify-content: space-between; }
+.grow { flex: 1; }
+
+input, select, textarea {
+  font: inherit; color: var(--ink); background: var(--surface);
+  border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px;
+  transition: border-color 120ms, box-shadow 120ms;
+}
+input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: none; border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+textarea { width: 100%; resize: vertical; }
+label { display: flex; flex-direction: column; gap: 4px; font-size: 0.85rem; color: var(--ink-2); }
+label > input, label > select { font-size: 1rem; color: var(--ink); }
+
+button.primary {
+  font: inherit; font-weight: 600;
+  background: linear-gradient(180deg, var(--accent), var(--accent-strong));
+  color: var(--accent-ink); border: none; border-radius: 999px; padding: 10px 22px;
+  cursor: pointer; transition: transform 120ms, filter 120ms;
+}
+button.primary:hover:not(:disabled) { filter: brightness(1.06); transform: translateY(-1px); }
+button.primary:disabled { opacity: 0.5; cursor: default; }
+button.ghost {
+  font: inherit; background: none; border: 1px solid var(--border);
+  border-radius: 999px; padding: 8px 14px; color: var(--ink-2); cursor: pointer;
+}
+button.ghost:hover { color: var(--ink); border-color: var(--ink-3); }
+button.small { font-size: 0.85rem; padding: 5px 12px; }
+.chip {
+  font: inherit; font-size: 0.82rem; background: var(--surface); color: var(--ink-2);
+  border: 1px solid var(--border); border-radius: 999px; padding: 5px 13px; cursor: pointer;
+  transition: color 120ms, border-color 120ms;
+}
+.chip:hover { color: var(--accent); border-color: var(--accent); }
+
+.ask-form { margin-top: 8px; display: flex; flex-direction: column; gap: 12px; }
+.suggestions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+.status { margin: 14px 0; color: var(--ink-2); font-size: 0.92rem; }
+.status.error { color: var(--nej); }
+.hint { color: var(--ink-3); font-size: 0.85rem; }
+
+/* Svar + underlag: staplat på mobil, tvåspaltigt från 960px */
+.result-grid { display: flex; flex-direction: column; gap: 8px; }
+.result-grid aside h3 { font-size: 1rem; margin: 14px 0 4px; }
+.answer h2, .answer h3 { margin: 0.7em 0 0.3em; font-size: 1.12rem; }
+.answer p { margin: 0.55em 0; }
+.answer ul { margin: 0.4em 0; padding-left: 1.3em; }
+
+.filter-row { display: flex; flex-direction: column; gap: 12px; margin-bottom: 8px; }
+.filter-row button[type="submit"] { align-self: flex-start; }
+
+.doc-list { list-style: none; padding: 0; margin: 12px 0; display: flex; flex-direction: column; gap: 10px; }
+.doc-list li {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px 16px; box-shadow: var(--shadow);
+}
+.doc-list .meta { font-size: 0.8rem; color: var(--ink-3); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.doc-list .title { font-weight: 600; margin: 3px 0; line-height: 1.35; }
+.doc-list .excerpt { color: var(--ink-2); font-size: 0.92rem; margin: 5px 0 0; }
+.party-chip {
+  display: inline-block; min-width: 1.6em; text-align: center; font-size: 0.75rem; font-weight: 700;
+  border-radius: 5px; padding: 1px 6px; border: 1px solid var(--border);
+  color: var(--ink-2); background: var(--surface-2);
+}
+
+/* ── Voteringsstaplar: tunna staplar, 2px ytmellanrum, etiketter i textfärg ── */
+.legend { display: flex; gap: 16px; flex-wrap: wrap; margin: 10px 0; font-size: 0.85rem; color: var(--ink-2); }
+.legend .key, .vote-counts .key { display: flex; align-items: center; gap: 6px; }
+.swatch { width: 12px; height: 12px; border-radius: 3px; display: inline-block; flex: none; }
+
+.vote-item {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px 16px; margin: 10px 0; box-shadow: var(--shadow);
+}
+.vote-item .vote-head { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 0.9rem; }
+.vote-item .vote-head .lbl { font-weight: 600; }
+.vote-bar { display: flex; height: 22px; margin: 10px 0 4px; border-radius: 5px; overflow: hidden; background: var(--surface-2); }
+.vote-bar .seg { height: 100%; border-right: 2px solid var(--surface); }
+.vote-bar .seg:last-child { border-right: none; }
+.vote-counts { display: flex; gap: 14px; font-size: 0.85rem; color: var(--ink-2); flex-wrap: wrap; }
+.vote-item details { margin-top: 8px; }
+.vote-item summary { cursor: pointer; font-size: 0.85rem; color: var(--ink-2); }
+.party-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 8px; }
+.party-table th, .party-table td { text-align: right; padding: 4px 8px; border-bottom: 1px solid var(--border); font-variant-numeric: tabular-nums; }
+.party-table th:first-child, .party-table td:first-child { text-align: left; }
+.party-table th { color: var(--ink-3); font-weight: 500; }
+
+/* ── Nyckeltalskort ── */
+.stat-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 12px; }
+.stat-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 18px 20px; box-shadow: var(--shadow);
+}
+.stat-card .stat-label { font-size: 0.88rem; font-weight: 500; color: var(--ink-2); }
+.stat-card .stat-value {
+  font-size: 2.1rem; font-weight: 700; margin: 4px 0 2px;
+  font-variant-numeric: tabular-nums; line-height: 1.15;
+}
+.stat-card .stat-meta { font-size: 0.78rem; color: var(--ink-3); }
+.stat-card.error .stat-value { font-family: var(--font-body); font-size: 1rem; font-weight: 500; color: var(--nej); }
+
+.site-footer {
+  padding: 28px var(--space) 44px; color: var(--ink-3); font-size: 0.82rem;
+  border-top: 1px solid var(--border); margin-top: 8px;
+}
+
+/* ════ Brytpunkt 1: ≥640px — surfplatta ════ */
+@media (min-width: 640px) {
+  :root { --wrap-max: 46rem; --space: 24px; }
+  .filter-row { flex-direction: row; align-items: end; }
+  .filter-row .grow { flex: 1; }
+  .filter-row button[type="submit"] { align-self: end; }
+  .stat-grid { grid-template-columns: repeat(2, 1fr); }
+  .site-header { padding-top: 44px; }
+}
+
+/* ════ Brytpunkt 2: ≥960px — desktop ════ */
+@media (min-width: 960px) {
+  :root { --wrap-max: 60rem; }
+  body { font-size: 17px; }
+  .stat-grid { grid-template-columns: repeat(3, 1fr); }
+  .result-grid { display: grid; grid-template-columns: 3fr 2fr; gap: 20px; align-items: start; }
+  .result-grid aside h3 { margin-top: 12px; }
+  .panel { padding-top: 32px; }
+}
+
+/* ════ Brytpunkt 3: ≥1280px — bred desktop ════ */
+@media (min-width: 1280px) {
+  :root { --wrap-max: 68rem; }
+  .site-header { padding-top: 56px; }
+  .card, .doc-list li, .vote-item, .stat-card { padding: 20px 24px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  button.primary { transition: none; }
+}
