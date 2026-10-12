@@ -92,6 +92,9 @@
   #info .meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
   #info .tom, #info .flode, #info .kalla { color: var(--muted-foreground); }
   #info .flode, #info .kalla { font-size: 12px; }
+  #info dl.noter { display: grid; grid-template-columns: max-content 1fr; gap: 4px 10px; margin: 8px 0 4px; padding-top: 8px; border-top: 1px solid var(--border); }
+  #info dl.noter dt { font-weight: 600; }
+  #info dl.noter dd { margin: 0; }
   .grupp { margin: 0; }
   .grupp-rubrik { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; background: none; border: 0; padding: 6px 4px; font-weight: 600; font-size: 13px; color: inherit; cursor: pointer; border-radius: 6px; }
   .grupp-rubrik:hover, .del-knapp:hover { background: var(--accent); }
@@ -187,6 +190,8 @@
 //         | 'kon' [radie1, radie2, längd] + axel | 'sphere' [radie] | 'ring' [radie, tjocklek] + axel
 //         | 'tube' banor [[[x,y,z],...]], radie, sluten | 'hjul' (däck 205/55R16)
 // ram: 'motor' = positionen räknas i motorns koordinater (vevaxeln, lutad 30 grader åt höger).
+//
+// NOTER (längre ner): per del-id valfritt arbete, inkop och timing - projektets bedömning, inte delens geometri.
 // ============================================================
 const RAMAR = {
   // Vevaxelns centrum. N52 lutar ca 30 grader åt höger (avgassidan), insuget på vänster sida.
@@ -261,10 +266,16 @@ const DELAR = [
   { id: 'tvillingslangar', namn: 'Tvillingslangarna under kylvätskebehållaren', grupp: 'kylning', ref: '61 2026-10-12', beskrivning: 'De två slangarna under behållaren som svettas. Hålls under uppsikt.',
     source: 'Egen iakttagelse 2026-10-12. Slangarnas dragning förenklad.', approx: true, form: 'tube', radie: 0.014,
     banor: [[[1.92, 0.67, 0.45], [1.85, 0.56, 0.42], [1.72, 0.50, 0.32]], [[1.88, 0.67, 0.39], [1.82, 0.58, 0.36], [1.70, 0.54, 0.26]]] },
-  { id: 'vattenpump', namn: 'Vattenpump (elektrisk)', grupp: 'kylning', ref: '', beskrivning: 'Eldriven kylvätskepump nedtill framtill på motorn.',
+  { id: 'vattenpump', namn: 'Vattenpump (elektrisk)', grupp: 'kylning', ref: '89', beskrivning: 'Eldriven kylvätskepump nedtill framtill på motorn. Termostaten sitter monterad på pumpen.',
     source: K_ETK + ' (11 51 Vattenpump). Läge ej uppmätt.', approx: true, pos: [1.66, 0.40, 0.14], former: [
       { form: 'cylinder', pos: [0, 0, 0], storlek: [0.06, 0.14], axel: 'x' },
       { form: 'cylinder', pos: [-0.10, 0, 0], storlek: [0.045, 0.08], axel: 'x' },
+    ] },
+
+  { id: 'termostat', namn: 'Termostat (med hus)', grupp: 'kylning', ref: '89', beskrivning: 'Elektroniskt styrd termostat, 97 grader, monterad på vattenpumpen. Måste ut för att pumpen ska komma ut.',
+    source: K_ETK + ' (11 53 Termostat); monterad på pumpen enligt BMW:s arbetsgång. Läge ej uppmätt.', approx: true, pos: [1.70, 0.50, 0.14], former: [
+      { form: 'cylinder', pos: [0, 0, 0], storlek: [0.045, 0.07], axel: 'y' },
+      { form: 'cylinder', pos: [0.05, 0.02, 0], storlek: [0.018, 0.06], axel: 'x' },
     ] },
 
   // ---------------- AC: hela kretsen ----------------
@@ -374,12 +385,22 @@ const DELAR = [
     source: K_ETK + ' (63 11 Strålkastare).', pos: [1.99, 0.72, 0.58], form: 'rbox', storlek: [0.22, 0.12, 0.30] },
 
   // ---------------- Övrigt ----------------
-  { id: 'bransletank-och-pump', namn: 'Bränsletank och bränslepump', grupp: 'ovrigt', ref: '61 B11', beskrivning: 'Sadeltank under baksätet som går över kardanen. Pumpen sitter i högra halvan.',
-    source: K_ETK + ' (16 11 Bränsletank, 16 14 Bränslepump).', approx: true, pos: [-0.62, 0, 0], former: [
+  // id behålls från första versionen så att gamla länkar fungerar
+  { id: 'bransletank-och-pump', namn: 'Bränsletank', grupp: 'ovrigt', ref: '64', beskrivning: 'Sadeltank under baksätet som går över kardanen. Två luckor under baksätets sittdyna: pumpen i höger halva, filtret i vänster.',
+    source: K_ETK + ' (16 11 Bränsletank).', approx: true, pos: [-0.62, 0, 0], former: [
       { form: 'rbox', pos: [0, 0.38, -0.33], storlek: [0.55, 0.22, 0.46] },
       { form: 'rbox', pos: [0, 0.38, 0.33], storlek: [0.55, 0.22, 0.46] },
       { form: 'box', pos: [0, 0.47, 0], storlek: [0.40, 0.06, 0.24] },
-      { form: 'cylinder', pos: [0.05, 0.42, 0.33], storlek: [0.06, 0.22], axel: 'y' },
+    ] },
+  { id: 'branslepump', namn: 'Bränslepump med nivågivare (höger)', grupp: 'ovrigt', ref: '64', beskrivning: 'Pumpmodulen i tankens högra halva, med höger nivågivare. Nås under baksätets sittdyna, höger lucka.',
+    source: K_ETK + ' (16 11 7 197 076). Höger halva belagd, läge i halvan ungefärligt.', approx: true, pos: [-0.57, 0, 0.33], former: [
+      { form: 'cylinder', pos: [0, 0.42, 0], storlek: [0.06, 0.22], axel: 'y' },
+      { form: 'cylinder', pos: [0, 0.535, 0], storlek: [0.075, 0.012], axel: 'y' },
+    ] },
+  { id: 'bransfilter', namn: 'Bränslefilter med tryckregulator (vänster)', grupp: 'ovrigt', ref: '64', beskrivning: 'Filter, tryckregulator och vänster nivågivare i en enhet, i tankens vänstra halva. Nås under baksätets sittdyna, vänster lucka.',
+    source: K_ETK + ' (16 11 7 163 295, enligt ECS för E90 N52 - ej verifierat mot chassinumret). Läge i halvan ungefärligt.', approx: true, pos: [-0.57, 0, -0.33], former: [
+      { form: 'cylinder', pos: [0, 0.42, 0], storlek: [0.05, 0.20], axel: 'y' },
+      { form: 'cylinder', pos: [0, 0.535, 0], storlek: [0.075, 0.012], axel: 'y' },
     ] },
   { id: 'bakre-ljuddampare', namn: 'Bakre ljuddämpare', grupp: 'ovrigt', ref: '', beskrivning: 'Slutljuddämparen tvärs längst bak under bilen.',
     source: K_ETK + ' (18 Avgassystem). Form och utblås ej belagda.', approx: true, pos: [-2.0, 0.30, -0.10], former: [
@@ -399,6 +420,104 @@ const DELAR = [
       { form: 'rbox', pos: [0, 0.14, 0], storlek: [0.07, 0.05, 0.05] },
     ] },
 ];
+
+// ============================================================
+// NOTER - projektets bedömning per del. Uppdateras när de numrerade dokumenten ändras.
+// arbete = vad som bör göras, inkop = ungefärligt inköpspris från researchen, timing = när.
+// Belopp inkl. moms. Ref-numren pekar på dokumenten i context/projects/project-bil-dakkar/.
+// ============================================================
+const NOTER = {
+  'ventilkapa': {
+    arbete: 'Ventilkåpans packning är en möjlig läckpunkt (B9). Byts bara om läcksökningen pekar hit.',
+    inkop: 'Febi 27494, 501 kr (Autodoc) + nya skruvar.',
+    timing: 'Villkorat av läcksökningen.' },
+  'vanos-solenoider': {
+    arbete: 'Rengjorda med nya o-ringar 2026-10-08 (felkod 2A87). Nästa steg om koden kommer tillbaka: backventilerna (2 st).',
+    inkop: 'Bara om byttestet pekar ut en solenoid: Febi 103360, 683 kr (Autodoc). Aldrig de billigaste.',
+    timing: 'Läs koderna ca 16 okt. 2A87 tillbaka: backventilerna snarast. Annars vid andra oljebytet.' },
+  'oljefilterhus': {
+    arbete: 'Packningen har läckt (B9). Efter motortvätten syns inga nya spår.',
+    inkop: 'Packningen ligger redan hos Gröndal.',
+    timing: 'Byts om läckan kommer tillbaka, i samma session som remkitet.' },
+  'oljetrag-och-nivagivare': {
+    arbete: 'Kontrollera nivågivaren: läs råvärdet före avtappning, med tomt tråg och efter påfyllning (F01).',
+    timing: 'Vid andra oljebytet, 100-200 mil efter 2026-10-08.' },
+  'drivrem': {
+    arbete: 'Rem, spännare och styrrulle byts (beslut 2026-09-01). Aldrig ny rem under en aktiv oljeläcka.',
+    timing: 'När oljeläckan är utredd, i samma session som eventuellt packningsbyte.' },
+  'expansionskarl': {
+    arbete: 'Byts förebyggande när kylsystemet ändå töms. Tjugo år gammal plast.',
+    inkop: 'Ca 450-500 kr. Trycklock 1,4 bar redan köpt (159 kr).',
+    timing: 'Med vattenpumpen.' },
+  'tvillingslangar': {
+    arbete: 'Torka av, kör, titta igen. Kommer fukten tillbaka och nivån sjunker: tas med i vattenpumpsjobbet (F02).',
+    timing: 'Nu, gratis.' },
+  'vattenpump': {
+    arbete: 'Gröndal fotograferar pumpens etikett (märke, nummer, datum). Originalpump från 2006: byt pump, termostat, kylvätska och expansionskärl i ett.',
+    inkop: 'Pierburg 7.02851.20.0, 3 672 kr (Autodoc, tre skruvar ingår). Hos Gröndal totalt ca 9,4 tkr med medhavda delar.',
+    timing: 'Etikettkollen vid länkarmsbesöket. Original: byt i vinter, före första långresan med släp. Felkod 2E8x: byt direkt.' },
+  'termostat': {
+    arbete: 'Byts alltid ihop med vattenpumpen.',
+    inkop: 'Mahle TM 14 97, ca 893 kr (Autodoc). Passform verifierad mot BMW 11 53 7 549 476.',
+    timing: 'Med vattenpumpen.' },
+  'ac-vatskeledning': {
+    arbete: 'Läcker vid höger framhjul. Lagas genom att hela ledningen byts, sedan vakuum och påfyllning.',
+    inkop: 'BMW 64 53 9 151 734 (kondensor till förångare), 3 813 kr hos Autodoc, säljs av Teilehandel24, gratis frakt. Verifiera numret mot chassinumret: 64 53 9 151 733 finns också.',
+    timing: 'Vänta på Gröndals artikelnummer och pris, och svaret om fronten måste av.' },
+  'ac-ror-hoger-fram': {
+    arbete: 'Läckpunkten. Åtgärden är att byta vätskeledningen.',
+    inkop: 'Ledningen 3 813 kr (se vätskeledningen). Arbete och AC-fyllning tillkommer, pris okänt.',
+    timing: 'Fråga Gröndal om pris och om fronten måste av.' },
+  'blandluftsspjall': {
+    arbete: 'Kontrolleras separat (B5).',
+    timing: 'Före november: samma spjäll styr defrostern.' },
+  'fordelningslada': {
+    arbete: 'Oljebyte (DTF-1). Görs av Gröndal: kräver plan lyft, och fastsittande pluggar är en risk.',
+    timing: 'Nästa verkstadsbesök.' },
+  'framdiff': {
+    arbete: 'Oljebyte till syntetisk 75W-90 i stället för 80W-90.',
+    inkop: 'Köpt: Castrol Transmax Axle Long Life 75W-90, 2 l, 501 kr inkl. frakt. Räcker till båda diffarna.',
+    timing: 'Nästa verkstadsbesök.' },
+  'bakdiff': {
+    arbete: 'Oljebyte till syntetisk 75W-90 i stället för 80W-90. Bra gör-det-själv-jobb nästa gång.',
+    inkop: 'Samma köpta olja som framdiffen.',
+    timing: 'Nästa verkstadsbesök.' },
+  'bakdiffens-faste': {
+    arbete: 'Misstänkt för klonket, tillsammans med länkarmarna. Be Gröndal titta när bilen står på lyften.',
+    inkop: 'Uppskattat, inte offererat: bakre fästet ca 2-4 tkr inkl. arbete. Även bärramens bussningar ca 8-15 tkr.',
+    timing: 'Vid länkarmsbesöket.' },
+  'lankarmar-bak': {
+    arbete: 'Två armar med dåliga bussningar byts. Hjulinställning efteråt, eller vid däckbytet.',
+    inkop: 'Beställt via Gröndal: Lemförder, ca 8 000 kr totalt.',
+    timing: 'Nästa verkstadsbesök. Gjordes inte 2026-10-09.' },
+  'baklykta-vanster-kaross': {
+    arbete: 'Lagad 2026-10-11, men en orange lampvarning finns kvar (F09). Läs Check Control och byt alla åtta baklampor (F10).',
+    timing: 'Nu.' },
+  'frm-ljusmodul': {
+    arbete: 'Läs felminnet tillsammans med lyktkoden.',
+    timing: 'Nästa verkstadsbesök.' },
+  'batteri': {
+    arbete: 'Ålder okänd och belastningstest ogjort. Måste testas innan DME-programvaran uppdateras (F03).',
+    timing: 'Före DME-uppdateringen.' },
+  'stralkastare-vanster': {
+    arbete: 'Halvljuset står för lågt (besiktning 2X). Felsök lyktinriktningen (LWR) först, ställ sedan in. Montera nya D1S-brännare.',
+    inkop: 'D1S-brännarna är beställda (69).',
+    timing: 'Nästa verkstadsbesök.' },
+  'stralkastare-hoger': {
+    arbete: 'Som vänster: LWR-felsökning, inställning och nya D1S-brännare.',
+    timing: 'Nästa verkstadsbesök.' },
+  'branslepump': {
+    arbete: 'Byts bara om bränsletrimmarna pekar på matningen. Byt filtret först och mät igen.',
+    inkop: 'VDO A2C53101330Z, 1 473 kr, eller Delphi FG1505-12B1, 1 584 kr (Autodoc). Hos Gröndal ca 3,5 tkr.',
+    timing: 'Inte nu. Efter VANOS-kontrollen och OBD-sessionen.' },
+  'bransfilter': {
+    arbete: 'Byts före pumpen om trimmarna visar att bensinen inte räcker till vid full gas. Samma arbete som pumpen, vänster lucka.',
+    inkop: 'Inte prisläst. Grovt 1-2 tkr för OE-märke + tätningsring.',
+    timing: 'Bara om OBD-sessionen pekar på matningen.' },
+  'vaxelvaljare': {
+    arbete: 'MS-läget indikerar inte (F06). Troligen konsolbrytaren, inte lådan.',
+    timing: 'Rörs inte nu (ägarens beslut).' },
+};
 
 const STANDARD_HASH = 'grupp=ac'; // visas när sidan öppnas utan hash
 
@@ -429,7 +548,7 @@ function byggLista() {
   listaEl.replaceChildren();
   for (const g of GRUPPER) {
     const delar = DELAR.filter((d) => d.grupp === g.id && (!q ||
-      [d.namn, d.id, d.ref, g.namn, d.beskrivning].join(' ').toLowerCase().includes(q)));
+      [d.namn, d.id, d.ref, g.namn, d.beskrivning, ...Object.values(NOTER[d.id] || {})].join(' ').toLowerCase().includes(q)));
     if (!delar.length) continue;
     const rubrik = el('button', { type: 'button', class: 'grupp-rubrik', 'data-grupp': g.id, 'aria-pressed': String(valdGrupp === g.id), title: `Markera hela gruppen ${g.namn}` },
       el('span', { class: 'prick', style: `background:${g.farg}`, 'aria-hidden': 'true' }),
@@ -469,6 +588,14 @@ function visaInfo() {
       el('span', { class: 'badge', 'data-variant': 'secondary', text: d.ref ? `Ref: ${d.ref}` : 'Ref: saknas' }),
       el('span', { class: 'badge', 'data-variant': d.approx ? 'outline' : 'secondary', text: d.approx ? 'Ungefärlig position' : 'Position belagd i stora drag' }));
     const blk = el('div', {}, el('h3', { text: d.namn }), el('p', { text: d.beskrivning }), meta);
+    const n = NOTER[d.id];
+    if (n) {
+      const dl = el('dl', { class: 'noter' });
+      for (const [nyckel, rubrik] of [['arbete', 'Arbete'], ['inkop', 'Inköp'], ['timing', 'Timing']]) {
+        if (n[nyckel]) dl.append(el('dt', { text: rubrik }), el('dd', { text: n[nyckel] }));
+      }
+      blk.append(dl);
+    }
     if (d.grupp === 'ac') blk.append(el('p', { class: 'flode', text: 'AC-flödet: kompressor → kondensor → torkfilter → expansionsventil → förångare → kompressor.' }));
     if (d.source) blk.append(el('p', { class: 'kalla', text: `Källa: ${d.source}` }));
     if (valda.length > 1) blk.style.marginBottom = '10px';
