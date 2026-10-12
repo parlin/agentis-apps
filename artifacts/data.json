@@ -1,27 +1,5 @@
 {
-  "generatedAt": "2026-10-12T22:10:48.061Z",
-  "deployed": [
-    {
-      "slug": "bil-dakkar-3d",
-      "title": "Bil-Dakkar - delkarta E91",
-      "description": "",
-      "url": "https://parlin.github.io/agentis-apps/bil-dakkar-3d/",
-      "lastCommit": "2026-10-12T23:55:55+02:00"
-    },
-    {
-      "slug": "prataleken",
-      "title": "Prataleken (kids voice game)",
-      "description": "",
-      "url": "https://prataleken.vercel.app",
-      "lastCommit": "2026-07-08T23:26:55Z"
-    },
-    {
-      "slug": "sleepy-hour",
-      "title": "Bed time",
-      "description": "Tap animals to tuck them in. Default 4×5; pass ?cols=N&rows=M to change the grid.",
-      "url": "https://parlin.github.io/agentis-apps/sleepy-hour/",
-      "lastCommit": "2026-04-24T00:32:53+02:00"
-    }
-  ],
+  "generatedAt": "2026-10-12T22:17:03.070Z",
+  "deployed": [],
   "pending": []
 }
