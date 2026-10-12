@@ -1,0 +1,1063 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bil-Dakkar - delkarta E91</title>
+<meta name="description" content="Roterbar 3D-modell av en BMW E91 325xi Touring 2007 som visar var delarna sitter.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='2' y='12' width='28' height='10' rx='3' fill='%23ff5a1f'/%3E%3Cpath d='M8 12l4-6h10l4 6' fill='none' stroke='%23ff5a1f' stroke-width='2.5'/%3E%3Ccircle cx='9' cy='23' r='3.5' fill='%23333'/%3E%3Ccircle cx='23' cy='23' r='3.5' fill='%23333'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/basecoat-css@1.0.2/dist/basecoat.cdn.min.css">
+<script>
+  // Mörkt läge enligt systemet (basecoat använder klassen .dark)
+  (function () {
+    var mq = window.matchMedia('(prefers-color-scheme: dark)');
+    var set = function () { document.documentElement.classList.toggle('dark', mq.matches); };
+    set();
+    if (mq.addEventListener) mq.addEventListener('change', set);
+  })();
+</script>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"
+  }
+}
+</script>
+<style>
+  :root { --accent-del: #ff5a1f; }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; overflow: hidden; }
+  body {
+    background: var(--background); color: var(--foreground);
+    display: flex; flex-direction: column; height: 100dvh; font-size: 14px;
+  }
+  header.top {
+    flex: none; border-bottom: 1px solid var(--border);
+    padding: 8px 12px 6px; display: flex; flex-direction: column; gap: 6px; min-width: 0;
+  }
+  header.top h1 { font-size: 16px; font-weight: 600; margin: 0; line-height: 1.2; }
+  header.top .sub { font-size: 12px; color: var(--muted-foreground); margin: 0; }
+  .verktyg { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .toolbar { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; min-width: 0; scrollbar-width: thin; }
+  .toolbar > * { flex: none; white-space: nowrap; }
+  .toolbar .sep { width: 1px; background: var(--border); margin: 2px; }
+  .plat { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .plat label { font-size: 13px; white-space: nowrap; }
+  .plat output { font-size: 13px; width: 3.2em; text-align: right; font-variant-numeric: tabular-nums; }
+  /* Stor tumvänlig slider */
+  #opacitet { flex: 1; min-width: 120px; height: 36px; margin: 0; background: transparent; accent-color: var(--accent-del); -webkit-appearance: none; appearance: none; touch-action: pan-x; }
+  #opacitet::-webkit-slider-runnable-track { height: 6px; border-radius: 3px; background: var(--border); }
+  #opacitet::-webkit-slider-thumb { -webkit-appearance: none; width: 28px; height: 28px; border-radius: 50%; background: var(--accent-del); border: 3px solid var(--background); box-shadow: 0 1px 4px rgba(0,0,0,.4); margin-top: -11px; }
+  #opacitet::-moz-range-track { height: 6px; border-radius: 3px; background: var(--border); }
+  #opacitet::-moz-range-thumb { width: 24px; height: 24px; border-radius: 50%; background: var(--accent-del); border: 3px solid var(--background); }
+  #opacitet:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+  main.layout { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  #viewer { position: relative; flex: 1; min-height: 160px; overflow: hidden; }
+  #viewer canvas { display: block; touch-action: none; width: 100%; height: 100%; }
+  #labels { position: absolute; inset: 0; pointer-events: none; }
+  .del-etikett {
+    background: var(--accent-del); color: #fff; font-size: 12px; line-height: 1.25;
+    padding: 3px 7px; border-radius: 6px; white-space: nowrap; box-shadow: 0 1px 4px rgba(0,0,0,.35);
+    transform: translateY(-14px);
+  }
+  .del-etikett small { opacity: .9; margin-left: 4px; }
+  #fallback { display: none; position: absolute; inset: 0; align-items: center; justify-content: center; padding: 24px; text-align: center; color: var(--muted-foreground); }
+  #fallback.show { display: flex; }
+  #note {
+    position: absolute; left: 8px; bottom: 8px; font-size: 11px; color: var(--muted-foreground);
+    background: color-mix(in oklab, var(--background) 80%, transparent); padding: 2px 6px; border-radius: 4px; pointer-events: none;
+  }
+  #toast {
+    position: absolute; left: 50%; top: 10px; transform: translateX(-50%);
+    background: var(--foreground); color: var(--background); padding: 6px 12px; border-radius: 6px;
+    font-size: 13px; opacity: 0; transition: opacity .2s; pointer-events: none;
+  }
+  #toast.show { opacity: 1; }
+  aside.panel { flex: none; border-top: 1px solid var(--border); background: var(--background); display: flex; flex-direction: column; max-height: 44dvh; min-height: 0; }
+  aside.panel.collapsed .panel-body { display: none; }
+  .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 12px; border-bottom: 1px solid var(--border); }
+  .panel-head h2 { font-size: 14px; margin: 0; font-weight: 600; }
+  .panel-body { overflow-y: auto; padding: 10px 12px 16px; min-height: 0; display: flex; flex-direction: column; gap: 10px; }
+  #info { border: 1px solid var(--border); border-radius: 8px; padding: 10px; font-size: 13px; }
+  #info h3 { margin: 0 0 4px; font-size: 14px; }
+  #info p { margin: 4px 0; }
+  #info .meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  #info .tom, #info .flode, #info .kalla { color: var(--muted-foreground); }
+  #info .flode, #info .kalla { font-size: 12px; }
+  .grupp { margin: 0; }
+  .grupp-rubrik { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; background: none; border: 0; padding: 6px 4px; font-weight: 600; font-size: 13px; color: inherit; cursor: pointer; border-radius: 6px; }
+  .grupp-rubrik:hover, .del-knapp:hover { background: var(--accent); }
+  .grupp-rubrik .prick { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+  .grupp-rubrik .antal { margin-left: auto; font-weight: 400; color: var(--muted-foreground); font-size: 12px; }
+  .grupp ul { list-style: none; margin: 0 0 6px; padding: 0; }
+  .del-knapp { display: flex; gap: 8px; align-items: baseline; width: 100%; text-align: left; background: none; border: 0; padding: 7px 4px 7px 22px; font-size: 13px; color: inherit; cursor: pointer; border-radius: 6px; }
+  .del-knapp[aria-pressed="true"] { background: color-mix(in oklab, var(--accent-del) 18%, transparent); font-weight: 600; }
+  .grupp-rubrik[aria-pressed="true"] { background: color-mix(in oklab, var(--accent-del) 12%, transparent); }
+  .del-knapp .ref { margin-left: auto; color: var(--muted-foreground); font-size: 11px; white-space: nowrap; }
+  .del-knapp .ca { color: var(--muted-foreground); font-size: 11px; font-weight: 400; }
+  .disclaimer { font-size: 12px; color: var(--muted-foreground); margin: 0; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  @media (min-width: 640px) {
+    main.layout { flex-direction: row; }
+    aside.panel { width: 320px; max-height: none; border-top: 0; border-left: 1px solid var(--border); }
+    aside.panel.collapsed .panel-body { display: flex; }
+    #toggle-panel { display: none; }
+    header.top { flex-direction: row; align-items: center; justify-content: space-between; gap: 16px; }
+    header.top .titel { flex: none; }
+    .verktyg { flex: 1; align-items: flex-end; }
+    .plat { width: min(100%, 420px); }
+  }
+  @media (min-width: 1024px) { aside.panel { width: 360px; } }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="titel">
+    <h1>Bil-Dakkar - delkarta E91</h1>
+    <p class="sub">BMW 325xi Touring 2007 (N52, xDrive, vänsterstyrd)</p>
+  </div>
+  <div class="verktyg">
+    <div class="toolbar" role="toolbar" aria-label="Vy och visning">
+      <button type="button" class="btn" data-size="sm" id="btn-exempel-ac">Exempel: AC-systemet</button>
+      <button type="button" class="btn" data-size="sm" data-variant="outline" id="btn-kopiera">Kopiera länk</button>
+      <span class="sep" aria-hidden="true"></span>
+      <button type="button" class="btn" data-size="sm" data-variant="outline" id="btn-reset">Återställ vy</button>
+      <button type="button" class="btn" data-size="sm" data-variant="outline" data-vy="fram">Fram</button>
+      <button type="button" class="btn" data-size="sm" data-variant="outline" data-vy="bak">Bak</button>
+      <button type="button" class="btn" data-size="sm" data-variant="outline" data-vy="vanster">Vänster</button>
+      <button type="button" class="btn" data-size="sm" data-variant="outline" data-vy="hoger">Höger</button>
+      <button type="button" class="btn" data-size="sm" data-variant="outline" data-vy="ovan">Ovan</button>
+      <button type="button" class="btn" data-size="sm" data-variant="outline" data-vy="under">Under</button>
+      <span class="sep" aria-hidden="true"></span>
+      <button type="button" class="btn" data-size="sm" data-variant="secondary" id="btn-rontgen" aria-pressed="true">Röntgen: på</button>
+      <button type="button" class="btn" data-size="sm" data-variant="secondary" id="btn-rotera" aria-pressed="false">Rotation: av</button>
+    </div>
+    <div class="plat">
+      <label for="opacitet">Kaross</label>
+      <input type="range" id="opacitet" min="0" max="100" step="1" value="15" aria-describedby="opacitet-varde">
+      <output id="opacitet-varde" for="opacitet">15 %</output>
+    </div>
+  </div>
+</header>
+
+<main class="layout">
+  <div id="viewer" aria-label="3D-modell av bilen. Dra för att rotera, nyp för att zooma.">
+    <div id="labels"></div>
+    <div id="fallback" role="status">
+      <p>Din webbläsare kan tyvärr inte visa 3D-modellen (WebGL saknas). Delistan fungerar ändå, med beskrivning och referens för varje del.</p>
+    </div>
+    <div id="note">Positionerna är ungefärliga. Schematisk modell.</div>
+    <div id="toast" role="status" aria-live="polite"></div>
+  </div>
+
+  <aside class="panel" id="panel">
+    <div class="panel-head">
+      <h2>Delar</h2>
+      <button type="button" class="btn" data-size="sm" data-variant="ghost" id="toggle-panel" aria-expanded="true" aria-controls="panel-body">Dölj</button>
+    </div>
+    <div class="panel-body" id="panel-body">
+      <section id="info" aria-live="polite"></section>
+      <label class="sr-only" for="sok">Sök del</label>
+      <input class="input" type="search" id="sok" placeholder="Sök del, grupp eller ref (t.ex. B28)" autocomplete="off">
+      <nav id="parts-list" aria-label="Delar grupperade"></nav>
+      <p class="disclaimer">Positionerna är ungefärliga. Schematisk modell. Karossen är byggd för hand efter E91:s mått (längd 4 520, bredd 1 817, höjd 1 418, hjulbas 2 760 mm), inte skannad. Delar märkta "ca" har en position eller form som inte gått att belägga. Vänster = förarsidan, sett från förarplatsen.</p>
+    </div>
+  </aside>
+</main>
+
+<script type="module">
+// ============================================================
+// DELAR - lägg till fler här.
+// Koordinater i meter: x = längs bilen (+ fram), y = höjd över marken, z = sidled (+ höger, - vänster/förarsidan).
+// Origo = marken mitt mellan axlarna. Framaxel x = 1.38, bakaxel x = -1.38 (hjulbas 2 760 mm).
+//
+// Varje del: id, namn, grupp, ref, beskrivning, source, approx, pos [x,y,z], och antingen
+//   en enkel form:  form + storlek (+ axel, + fler = extra positioner i bilens koordinater)
+//   eller en sammansatt: former: [{ form, pos (lokal), storlek, axel, rot, banor, radie, sluten }]
+// Former: 'box' [lx,ly,lz] | 'rbox' [lx,ly,lz] (rundade hörn) | 'cylinder' [radie, längd] + axel x|y|z
+//         | 'kon' [radie1, radie2, längd] + axel | 'sphere' [radie] | 'ring' [radie, tjocklek] + axel
+//         | 'tube' banor [[[x,y,z],...]], radie, sluten | 'hjul' (däck 205/55R16)
+// ram: 'motor' = positionen räknas i motorns koordinater (vevaxeln, lutad 30 grader åt höger).
+// ============================================================
+const RAMAR = {
+  // Vevaxelns centrum. N52 lutar ca 30 grader åt höger (avgassidan), insuget på vänster sida.
+  motor: { pos: [1.38, 0.38, 0.03], rot: [Math.PI / 6, 0, 0] },
+};
+
+const GRUPPER = [
+  { id: 'motor', namn: 'Motor', farg: '#8a919c' },
+  { id: 'kylning', namn: 'Kylning', farg: '#4f86c6' },
+  { id: 'ac', namn: 'AC (luftkonditionering)', farg: '#2fae9f',
+    beskrivning: 'Köldmediet går runt i en sluten krets: kompressor → kondensor → torkfilter → expansionsventil → förångare → kompressor.' },
+  { id: 'drivlina', namn: 'Drivlina', farg: '#9b7ac4' },
+  { id: 'chassi', namn: 'Chassi', farg: '#b0956b' },
+  { id: 'el', namn: 'El och ljus', farg: '#d0b23e' },
+  { id: 'ovrigt', namn: 'Övrigt', farg: '#86a874' },
+];
+
+const K_ETK = 'realoem.com, ETK-sprängskisser för E91 325xi';
+const K_MATT = 'BMW:s tekniska data för E91 (mått)';
+
+const DELAR = [
+  // ---------------- Motor ----------------
+  { id: 'motor', namn: 'Motor (N52B25)', grupp: 'motor', ref: '', beskrivning: 'Raksexa på 2,5 liter, längsmonterad och lutad ca 30 grader åt höger. Insuget (DISA-grenröret) på vänster sida, avgasgrenrören på höger.',
+    source: K_ETK + ' (grupp 11 Motor); lutning och insugssida enligt BMW:s N52-beskrivning. Mått ca 0,7 x 0,6 x 0,65 m.',
+    ram: 'motor', pos: [0, 0, 0], former: [
+      { form: 'box', pos: [0, 0.10, 0], storlek: [0.60, 0.30, 0.25] },               // motorblock
+      { form: 'box', pos: [0, -0.07, 0], storlek: [0.58, 0.06, 0.28] },              // ramlageröverfall
+      { form: 'box', pos: [0, 0.31, 0], storlek: [0.60, 0.12, 0.22] },               // topplock
+      { form: 'box', pos: [0.32, 0.14, 0], storlek: [0.04, 0.42, 0.24] },            // kamkedjekåpa
+      { form: 'rbox', pos: [0, 0.26, -0.33], storlek: [0.56, 0.15, 0.11] },          // insugsgrenrör (DISA)
+      ...[-0.25, -0.15, -0.05, 0.05, 0.15, 0.25].map((x) => ({ form: 'cylinder', pos: [x, 0.30, -0.20], storlek: [0.022, 0.16], axel: 'z' })),
+      { form: 'tube', radie: 0.024, banor: [[[0.25, 0.30, 0.12], [0.15, 0.18, 0.22], [0.06, -0.04, 0.22]], [[-0.25, 0.30, 0.12], [-0.15, 0.18, 0.22], [-0.06, -0.04, 0.22]]] }, // avgasgrenrör
+      { form: 'cylinder', pos: [0.37, 0, 0], storlek: [0.09, 0.04], axel: 'x' },     // vevaxelremskiva
+      { form: 'cylinder', pos: [0.24, 0.24, -0.22], storlek: [0.075, 0.16], axel: 'x' }, // generator
+    ] },
+  { id: 'ventilkapa', namn: 'Ventilkåpa och ventillyftare', grupp: 'motor', ref: '63', beskrivning: 'Kåpan ovanpå topplocket. Under den sitter kamaxlarna och de hydrauliska ventillyftarna.',
+    source: K_ETK + ' (11 12 Ventilkåpa).', ram: 'motor', pos: [0, 0.415, 0], former: [
+      { form: 'rbox', pos: [0, 0, 0], storlek: [0.62, 0.09, 0.21] },
+      { form: 'cylinder', pos: [0.12, 0.05, -0.05], storlek: [0.03, 0.03], axel: 'y' },
+    ] },
+  { id: 'vanos-solenoider', namn: 'VANOS-solenoider', grupp: 'motor', ref: '61 B27', beskrivning: 'Två magnetventiler framtill på topplocket, en för insugs- och en för avgaskamaxeln.',
+    source: K_ETK + ' (11 36 VANOS). Exakt höjd ej uppmätt.', approx: true, ram: 'motor', pos: [0.35, 0.36, 0], former: [
+      { form: 'cylinder', pos: [0, 0, -0.055], storlek: [0.02, 0.07], axel: 'x' },
+      { form: 'cylinder', pos: [0, 0, 0.055], storlek: [0.02, 0.07], axel: 'x' },
+    ] },
+  { id: 'oljefilterhus', namn: 'Oljefilterhus', grupp: 'motor', ref: '61 B9', beskrivning: 'Sitter framtill på motorns vänstra sida (insugssidan) med filterlocket uppåt. Packningen mot blocket är en känd läckpunkt.',
+    source: K_ETK + ' (11 42 Oljefilter); placering vänster fram enligt forum (bimmerforums, e90post).', approx: true,
+    pos: [1.62, 0.62, -0.26], former: [
+      { form: 'cylinder', pos: [0, 0, 0], storlek: [0.048, 0.15], axel: 'y' },
+      { form: 'box', pos: [0, -0.10, 0.05], storlek: [0.10, 0.08, 0.10] },
+    ] },
+  { id: 'oljetrag-och-nivagivare', namn: 'Oljetråg och nivågivare', grupp: 'motor', ref: '63 del 19.6', beskrivning: 'Tråget under motorn. På xDrive går vänster drivaxel genom tråget. Nivågivaren sitter i botten.',
+    source: K_ETK + ' (11 13 Oljetråg, 12 61 Oljenivågivare).', ram: 'motor', pos: [0, -0.17, 0], former: [
+      { form: 'box', pos: [0, 0, 0], storlek: [0.56, 0.11, 0.27] },
+      { form: 'box', pos: [-0.12, -0.09, 0], storlek: [0.30, 0.08, 0.22] },
+      { form: 'cylinder', pos: [-0.12, -0.14, 0.04], storlek: [0.035, 0.03], axel: 'y' },
+    ] },
+  { id: 'drivrem', namn: 'Drivremmar', grupp: 'motor', ref: '61', beskrivning: 'Huvudremmen driver generator och servopump (vattenpumpen är elektrisk). AC-kompressorn har en egen kortare rem.',
+    source: K_ETK + ' (11 28 Remdrift). Remmarnas bana förenklad.', approx: true, ram: 'motor', pos: [0.40, 0, 0], former: [
+      { form: 'tube', radie: 0.008, sluten: true, banor: [[[0, 0.09, 0], [0, 0.30, -0.16], [0, 0.31, -0.29], [0, 0.17, -0.25], [0, 0.0, 0.10]]] },
+      { form: 'tube', radie: 0.008, sluten: true, banor: [[[0, 0.08, -0.02], [0, 0.01, -0.31], [0, -0.11, -0.27], [0, -0.09, 0.02]]] },
+    ] },
+
+  // ---------------- Kylning ----------------
+  { id: 'kylare', namn: 'Kylare med fläkt', grupp: 'kylning', ref: '', beskrivning: 'Längst fram, direkt bakom AC-kondensorn. Den elektriska fläkten sitter på baksidan.',
+    source: K_ETK + ' (17 11 Kylare, 17 42 Fläkt).', pos: [1.99, 0.56, 0], former: [
+      { form: 'box', pos: [0, 0, 0], storlek: [0.032, 0.42, 0.64] },
+      { form: 'cylinder', pos: [-0.07, 0, 0], storlek: [0.19, 0.08], axel: 'x' },
+    ] },
+  { id: 'expansionskarl', namn: 'Expansionskärl (kylvätskebehållare)', grupp: 'kylning', ref: '61 B2', beskrivning: 'Kylvätskebehållaren i främre högra delen av motorrummet, vid kylarens högra sida.',
+    source: K_ETK + ' (17 13 Expansionskärl). Läge ej uppmätt.', approx: true, pos: [1.90, 0.76, 0.42], form: 'rbox', storlek: [0.12, 0.17, 0.15] },
+  { id: 'tvillingslangar', namn: 'Tvillingslangarna under kylvätskebehållaren', grupp: 'kylning', ref: '61 2026-10-12', beskrivning: 'De två slangarna under behållaren som svettas. Hålls under uppsikt.',
+    source: 'Egen iakttagelse 2026-10-12. Slangarnas dragning förenklad.', approx: true, form: 'tube', radie: 0.014,
+    banor: [[[1.92, 0.67, 0.45], [1.85, 0.56, 0.42], [1.72, 0.50, 0.32]], [[1.88, 0.67, 0.39], [1.82, 0.58, 0.36], [1.70, 0.54, 0.26]]] },
+  { id: 'vattenpump', namn: 'Vattenpump (elektrisk)', grupp: 'kylning', ref: '', beskrivning: 'Eldriven kylvätskepump nedtill framtill på motorn.',
+    source: K_ETK + ' (11 51 Vattenpump). Läge ej uppmätt.', approx: true, pos: [1.66, 0.40, 0.14], former: [
+      { form: 'cylinder', pos: [0, 0, 0], storlek: [0.06, 0.14], axel: 'x' },
+      { form: 'cylinder', pos: [-0.10, 0, 0], storlek: [0.045, 0.08], axel: 'x' },
+    ] },
+
+  // ---------------- AC: hela kretsen ----------------
+  // Flöde: kompressor → kondensor → torkfilter → expansionsventil → förångare → kompressor
+  { id: 'ac-kompressor', namn: 'AC-kompressor', grupp: 'ac', ref: '', beskrivning: 'Remdriven kompressor nere framtill på motorns vänstra sida, med egen rem och remskiva. Steg 1: trycker ihop köldmediet till het gas.',
+    source: K_ETK + ' (64 52 Kompressor). Läge vänster nedtill tolkat ur sprängskiss och forum.', approx: true,
+    ram: 'motor', pos: [0.22, -0.05, -0.27], former: [
+      { form: 'cylinder', pos: [0, 0, 0], storlek: [0.062, 0.20], axel: 'x' },
+      { form: 'cylinder', pos: [0.12, 0, 0], storlek: [0.058, 0.035], axel: 'x' },
+      { form: 'box', pos: [-0.02, 0.07, 0], storlek: [0.06, 0.04, 0.05] },
+    ] },
+  { id: 'ac-hogtrycksledning', namn: 'Högtrycksledning (kompressor till kondensor)', grupp: 'ac', ref: '', beskrivning: 'Leder den heta gasen under högt tryck från kompressorn fram till kondensorns vänstra sida.',
+    source: K_ETK + ' (64 50 Köldmedieledningar). Dragning förenklad.', approx: true, form: 'tube', radie: 0.011,
+    banor: [[[1.58, 0.54, -0.23], [1.72, 0.57, -0.30], [1.90, 0.55, -0.34], [2.02, 0.62, -0.31]]] },
+  { id: 'ac-kondensor', namn: 'AC-kondensor', grupp: 'ac', ref: '', beskrivning: 'Tunn platta framför kylaren. Steg 2: kyler gasen så att den blir vätska.',
+    source: K_ETK + ' (64 53 Kondensor). Placering framför kylaren är belagd, mått uppskattade.', pos: [2.035, 0.55, 0], form: 'box', storlek: [0.016, 0.36, 0.62] },
+  { id: 'ac-torkfilter', namn: 'Torkfilter (receiver)', grupp: 'ac', ref: '', beskrivning: 'Sitter på kondensorns högra sida. Steg 3: tar upp fukt och smuts ur köldmediet.',
+    source: K_ETK + ' (64 53 Torkfilter). Sida ej belagd.', approx: true, pos: [2.03, 0.55, 0.345], form: 'cylinder', storlek: [0.03, 0.24], axel: 'y' },
+  { id: 'ac-vatskeledning', namn: 'Vätskeledning (kondensor till expansionsventil)', grupp: 'ac', ref: '', beskrivning: 'Går längs höger sida i motorrummet, förbi höger framhjul, från torkfiltret till expansionsventilen vid torpedväggen.',
+    source: K_ETK + ' (64 50 Köldmedieledningar). Dragning förenklad.', approx: true, form: 'tube', radie: 0.009,
+    banor: [[[2.02, 0.44, 0.36], [1.92, 0.42, 0.52], [1.55, 0.47, 0.58], [1.12, 0.57, 0.60], [1.00, 0.74, 0.46], [0.96, 0.80, 0.24]]] },
+  { id: 'ac-ror-hoger-fram', namn: 'AC-röret bakom höger framhjul (läckan)', grupp: 'ac', ref: 'dialog Gröndal 2026-10-09', beskrivning: 'Den del av vätskeledningen som går bakom höger framhjul. Här hittade verkstaden läckan.',
+    source: 'Motorcenter Gröndal 2026-10-09 (projektets dialoglogg). Exakt punkt på röret ej känd.', approx: true, form: 'tube', radie: 0.02,
+    banor: [[[1.18, 0.555, 0.60], [1.10, 0.585, 0.598], [1.04, 0.66, 0.55]]] },
+  { id: 'ac-tryckgivare', namn: 'AC-tryckgivare', grupp: 'ac', ref: '', beskrivning: 'Givare på högtryckssidan som talar om för motorstyrningen vilket tryck kretsen har.',
+    source: K_ETK + ' (64 53 Tryckgivare). Läge ej belagt.', approx: true, pos: [1.88, 0.45, 0.53], former: [
+      { form: 'cylinder', pos: [0, 0, 0], storlek: [0.014, 0.05], axel: 'y' },
+      { form: 'box', pos: [0, 0.035, 0], storlek: [0.022, 0.02, 0.022] },
+    ] },
+  { id: 'ac-serviceventiler', namn: 'Serviceventiler (hög- och lågtryck)', grupp: 'ac', ref: '', beskrivning: 'Påfyllningsnipplarna för AC-service: en på vätskeledningen (högtryck) och en på sugledningen (lågtryck).',
+    source: K_ETK + ' (64 50). Lägen ej belagda.', approx: true, pos: [1.40, 0.52, 0.59], fler: [[1.40, 0.88, 0.39]], form: 'cylinder', storlek: [0.012, 0.05], axel: 'y' },
+  { id: 'ac-expansionsventil', namn: 'Expansionsventil', grupp: 'ac', ref: '', beskrivning: 'Vid torpedväggen där ledningarna går in i värmepaketet. Steg 4: sänker trycket så att köldmediet blir kallt.',
+    source: K_ETK + ' (64 11 Expansionsventil). Sidled ej belagt.', approx: true, pos: [0.95, 0.80, 0.21], form: 'rbox', storlek: [0.04, 0.06, 0.06] },
+  { id: 'ac-forangare', namn: 'Förångare', grupp: 'ac', ref: '', beskrivning: 'I värmepaketet bakom instrumentbrädan, i mitten. Steg 5: kyler luften som blåses in i kupén.',
+    source: K_ETK + ' (64 11 Värme- och klimataggregat).', approx: true, pos: [0.74, 0.68, 0.04], form: 'box', storlek: [0.06, 0.22, 0.30] },
+  { id: 'ac-sugledning', namn: 'Sugledning (lågtryck, förångare till kompressor)', grupp: 'ac', ref: '', beskrivning: 'Leder den kalla gasen tillbaka från förångaren till kompressorn, där kretsen börjar om.',
+    source: K_ETK + ' (64 50 Köldmedieledningar). Dragning förenklad.', approx: true, form: 'tube', radie: 0.013,
+    banor: [[[0.95, 0.82, 0.17], [1.05, 0.88, 0.38], [1.70, 0.84, 0.40], [1.86, 0.64, 0.20], [1.80, 0.52, -0.05], [1.62, 0.54, -0.20]]] },
+  { id: 'kupeflakt', namn: 'Kupéfläkt', grupp: 'ac', ref: '', beskrivning: 'Fläkten som blåser luft genom förångaren och värmepaketet in i kupén.',
+    source: K_ETK + ' (64 11 Fläktmotor). Läge ej belagt.', approx: true, pos: [0.72, 0.55, 0.26], former: [
+      { form: 'cylinder', pos: [0, 0, 0], storlek: [0.08, 0.07], axel: 'y' },
+      { form: 'cylinder', pos: [0, -0.06, 0], storlek: [0.04, 0.05], axel: 'y' },
+    ] },
+  { id: 'blandluftsspjall', namn: 'Blandluftsspjäll', grupp: 'ac', ref: '61 B5', beskrivning: 'Spjällmotorn på värmepaketet som blandar varm och kall luft.',
+    source: K_ETK + ' (64 11 Spjällmotorer). Läge ej belagt.', approx: true, pos: [0.70, 0.80, -0.18], former: [
+      { form: 'rbox', pos: [0, 0, 0], storlek: [0.06, 0.06, 0.04] },
+      { form: 'cylinder', pos: [0, 0, 0.03], storlek: [0.015, 0.03], axel: 'z' },
+    ] },
+
+  // ---------------- Drivlina ----------------
+  { id: 'automatlada', namn: 'Automatlåda (ZF 6HP)', grupp: 'drivlina', ref: '61 B8', beskrivning: 'Sexväxlad automatlåda direkt bakom motorn, med konverterkåpan framtill.',
+    source: K_ETK + ' (24 Automatlåda GA6HP19Z).', pos: [0.72, 0.36, 0.02], former: [
+      { form: 'kon', pos: [0.22, 0, 0], storlek: [0.13, 0.21, 0.24], axel: 'x' },
+      { form: 'box', pos: [-0.12, -0.02, 0], storlek: [0.44, 0.24, 0.24] },
+      { form: 'box', pos: [-0.06, -0.15, 0], storlek: [0.34, 0.06, 0.28] },
+    ] },
+  { id: 'fordelningslada', namn: 'Fördelningslåda (xDrive)', grupp: 'drivlina', ref: '', beskrivning: 'Fördelar kraften mellan fram- och bakaxel. Sitter bakom automatlådan, med utgången framåt på höger sida.',
+    source: K_ETK + ' (27 Fördelningslåda ATC).', pos: [0.24, 0.36, 0.03], former: [
+      { form: 'box', pos: [0, 0, 0], storlek: [0.22, 0.20, 0.20] },
+      { form: 'box', pos: [0.02, -0.05, 0.10], storlek: [0.16, 0.12, 0.10] },
+    ] },
+  { id: 'kardan-fram', namn: 'Kardan fram', grupp: 'drivlina', ref: '', beskrivning: 'Från fördelningslådan fram till framdiffen, längs motorns högra sida.',
+    source: K_ETK + ' (26 Kardanaxel fram). Sida belagd, exakt höjd ej.', approx: true, form: 'tube', radie: 0.025,
+    banor: [[[0.30, 0.31, 0.15], [0.85, 0.29, 0.20], [1.27, 0.29, 0.22]]] },
+  { id: 'framdiff', namn: 'Framdiff med drivaxlar', grupp: 'drivlina', ref: '', beskrivning: 'Framaxelns differential på höger sida om oljetråget. Vänster drivaxel går genom oljetråget.',
+    source: K_ETK + ' (31 Framaxel, 31 50 Slutväxel fram).', approx: true, pos: [1.38, 0.30, 0.22], former: [
+      { form: 'rbox', pos: [0, 0, 0], storlek: [0.20, 0.18, 0.18] },
+      { form: 'tube', radie: 0.016, banor: [[[0, 0.0, -0.10], [0, 0.01, -0.90]], [[0, 0, 0.09], [0, 0.016, 0.46]]] },
+    ] },
+  { id: 'kardan-bak', namn: 'Kardan bak', grupp: 'drivlina', ref: '', beskrivning: 'Från fördelningslådan bak till bakdiffen, med mittlager.',
+    source: K_ETK + ' (26 Kardanaxel).', form: 'tube', radie: 0.032,
+    banor: [[[0.12, 0.36, 0.02], [-0.55, 0.35, 0.01], [-1.24, 0.33, 0]]] },
+  { id: 'bakdiff', namn: 'Bakdiff med drivaxlar', grupp: 'drivlina', ref: '', beskrivning: 'Bakaxelns differential, upphängd i den bakre bärramen.',
+    source: K_ETK + ' (33 Bakaxel, 33 10 Slutväxel).', pos: [-1.38, 0.33, 0], former: [
+      { form: 'rbox', pos: [0, 0, 0], storlek: [0.24, 0.22, 0.28] },
+      { form: 'cylinder', pos: [-0.12, 0, 0], storlek: [0.10, 0.04], axel: 'x' },
+      { form: 'tube', radie: 0.016, banor: [[[0, 0, -0.13], [0, -0.014, -0.68]], [[0, 0, 0.13], [0, -0.014, 0.68]]] },
+    ] },
+  { id: 'bakdiffens-faste', namn: 'Bakdiffens fäste (bussningar)', grupp: 'drivlina', ref: '61 B26', beskrivning: 'Gummibussningarna som håller bakdiffen i bärramen: två framtill och en baktill.',
+    source: K_ETK + ' (33 17 Bakaxelbärare, bussningar).', approx: true, pos: [-1.27, 0.44, -0.15], fler: [[-1.27, 0.44, 0.15], [-1.54, 0.42, 0]], form: 'cylinder', storlek: [0.04, 0.05], axel: 'y' },
+
+  // ---------------- Chassi ----------------
+  { id: 'lankarmar-bak', namn: 'Länkarmar bak (båda sidor)', grupp: 'chassi', ref: '61 B26', beskrivning: 'Bakvagnens fem-länksupphängning på båda sidor, med bussningar.',
+    source: K_ETK + ' (33 32 Länkarmar). Geometrin förenklad.', approx: true, pos: [-1.38, 0, 0], former: [-1, 1].flatMap((s) => [
+      { form: 'tube', radie: 0.016, banor: [[[0.06, 0.46, s * 0.30], [0, 0.45, s * 0.66]]] },
+      { form: 'tube', radie: 0.018, banor: [[[-0.08, 0.22, s * 0.25], [-0.02, 0.22, s * 0.66]]] },
+      { form: 'tube', radie: 0.016, banor: [[[0.26, 0.25, s * 0.36], [0.06, 0.25, s * 0.64]]] },
+      { form: 'tube', radie: 0.012, banor: [[[-0.14, 0.30, s * 0.28], [-0.10, 0.28, s * 0.64]]] },
+    ]) },
+  { id: 'hjul-vanster-bak', namn: 'Vänster bakhjul (däckventilen)', grupp: 'chassi', ref: '61 B1', beskrivning: 'Vänster bakhjul, 205/55R16. Däckventilen ska kontrolleras.',
+    source: K_MATT + ' (spårvidd 1 513 mm bak, däck 205/55R16).', pos: [-1.38, 0.316, -0.757], form: 'hjul' },
+  { id: 'hjul-hoger-fram', namn: 'Höger framhjul', grupp: 'chassi', ref: '61 B3', beskrivning: 'Höger framhjul, 205/55R16.',
+    source: K_MATT + ' (spårvidd 1 500 mm fram).', pos: [1.38, 0.316, 0.75], form: 'hjul' },
+
+  // ---------------- El och ljus ----------------
+  { id: 'baklykta-vanster-kaross', namn: 'Baklykta vänster, karossdel', grupp: 'el', ref: '61 B28', beskrivning: 'Yttre delen av vänster baklykta, fast i karossen vid hörnet.',
+    source: K_ETK + ' (63 21 Baklykta).', pos: [-2.21, 0.92, -0.72], form: 'rbox', storlek: [0.14, 0.11, 0.20] },
+  { id: 'baklykta-vanster-lucka', namn: 'Baklykta vänster, luckdel', grupp: 'el', ref: '61 B28', beskrivning: 'Inre delen av vänster baklykta, sitter i bakluckan.',
+    source: K_ETK + ' (63 21 Baklykta i baklucka).', pos: [-2.285, 0.93, -0.49], form: 'rbox', storlek: [0.04, 0.09, 0.22] },
+  { id: 'frm-ljusmodul', namn: 'FRM-ljusmodul', grupp: 'el', ref: '61 B28', beskrivning: 'Ljusmodulen (Footwell Module) bakom sidoklädseln i vänster fotutrymme. Styr ytterbelysningen.',
+    source: K_ETK + ' (61 35 Fotrumsmodul).', approx: true, pos: [0.78, 0.42, -0.72], form: 'box', storlek: [0.14, 0.16, 0.04] },
+  { id: 'batteri', namn: 'Batteri', grupp: 'el', ref: '', beskrivning: 'I bagaget under golvet, på höger sida.',
+    source: K_ETK + ' (61 21 Batteri); mått från ett 90 Ah AGM-batteri (353 x 175 x 190 mm).', pos: [-1.98, 0.40, 0.55], form: 'rbox', storlek: [0.35, 0.19, 0.175] },
+  { id: 'stralkastare-vanster', namn: 'Strålkastare vänster', grupp: 'el', ref: '69', beskrivning: 'Vänster strålkastare.',
+    source: K_ETK + ' (63 11 Strålkastare).', pos: [1.99, 0.72, -0.58], form: 'rbox', storlek: [0.22, 0.12, 0.30] },
+  { id: 'stralkastare-hoger', namn: 'Strålkastare höger', grupp: 'el', ref: '69', beskrivning: 'Höger strålkastare.',
+    source: K_ETK + ' (63 11 Strålkastare).', pos: [1.99, 0.72, 0.58], form: 'rbox', storlek: [0.22, 0.12, 0.30] },
+
+  // ---------------- Övrigt ----------------
+  { id: 'bransletank-och-pump', namn: 'Bränsletank och bränslepump', grupp: 'ovrigt', ref: '61 B11', beskrivning: 'Sadeltank under baksätet som går över kardanen. Pumpen sitter i högra halvan.',
+    source: K_ETK + ' (16 11 Bränsletank, 16 14 Bränslepump).', approx: true, pos: [-0.62, 0, 0], former: [
+      { form: 'rbox', pos: [0, 0.38, -0.33], storlek: [0.55, 0.22, 0.46] },
+      { form: 'rbox', pos: [0, 0.38, 0.33], storlek: [0.55, 0.22, 0.46] },
+      { form: 'box', pos: [0, 0.47, 0], storlek: [0.40, 0.06, 0.24] },
+      { form: 'cylinder', pos: [0.05, 0.42, 0.33], storlek: [0.06, 0.22], axel: 'y' },
+    ] },
+  { id: 'bakre-ljuddampare', namn: 'Bakre ljuddämpare', grupp: 'ovrigt', ref: '', beskrivning: 'Slutljuddämparen tvärs längst bak under bilen.',
+    source: K_ETK + ' (18 Avgassystem). Form och utblås ej belagda.', approx: true, pos: [-2.0, 0.30, -0.10], former: [
+      { form: 'rbox', pos: [0, 0, 0], storlek: [0.30, 0.20, 0.62] },
+      { form: 'cylinder', pos: [-0.22, -0.05, -0.30], storlek: [0.035, 0.16], axel: 'x' },
+    ] },
+  { id: 'dragkrok', namn: 'Dragkrok (infällbar)', grupp: 'ovrigt', ref: '84', beskrivning: 'Infällbar dragkrok bakom bakre stötfångaren, på en tvärbalk.',
+    source: K_ETK + ' (71 60 Dragkrok). Form förenklad.', approx: true, pos: [-2.22, 0, 0], former: [
+      { form: 'box', pos: [0, 0.36, 0], storlek: [0.06, 0.06, 1.0] },
+      { form: 'tube', radie: 0.018, banor: [[[0, 0.33, 0], [-0.14, 0.30, 0], [-0.18, 0.38, 0]]] },
+      { form: 'sphere', pos: [-0.18, 0.41, 0], storlek: [0.025] },
+    ] },
+  { id: 'vaxelvaljare', namn: 'Växelväljare', grupp: 'ovrigt', ref: '61 B20', beskrivning: 'Växelspaken i mittkonsolen.',
+    source: K_ETK + ' (25 16 Växelväljare).', pos: [0.05, 0.62, 0], former: [
+      { form: 'box', pos: [0, 0, 0], storlek: [0.16, 0.04, 0.10] },
+      { form: 'cylinder', pos: [0, 0.07, 0], storlek: [0.012, 0.12], axel: 'y' },
+      { form: 'rbox', pos: [0, 0.14, 0], storlek: [0.07, 0.05, 0.05] },
+    ] },
+];
+
+const STANDARD_HASH = 'grupp=ac'; // visas när sidan öppnas utan hash
+
+// ============================================================
+// Tillstånd och UI (fungerar även utan WebGL)
+// ============================================================
+const delById = new Map(DELAR.map((d) => [d.id, d]));
+const gruppById = new Map(GRUPPER.map((g) => [g.id, g]));
+let valda = [];
+let valdGrupp = null;
+let viewer = null;
+
+const el = (tag, attrs = {}, ...barn) => {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'class') n.className = v; else if (k === 'text') n.textContent = v; else n.setAttribute(k, v);
+  }
+  for (const b of barn) if (b) n.append(b);
+  return n;
+};
+
+const listaEl = document.getElementById('parts-list');
+const infoEl = document.getElementById('info');
+const sokEl = document.getElementById('sok');
+
+function byggLista() {
+  const q = sokEl.value.trim().toLowerCase();
+  listaEl.replaceChildren();
+  for (const g of GRUPPER) {
+    const delar = DELAR.filter((d) => d.grupp === g.id && (!q ||
+      [d.namn, d.id, d.ref, g.namn, d.beskrivning].join(' ').toLowerCase().includes(q)));
+    if (!delar.length) continue;
+    const rubrik = el('button', { type: 'button', class: 'grupp-rubrik', 'data-grupp': g.id, 'aria-pressed': String(valdGrupp === g.id), title: `Markera hela gruppen ${g.namn}` },
+      el('span', { class: 'prick', style: `background:${g.farg}`, 'aria-hidden': 'true' }),
+      el('span', { text: g.namn }),
+      el('span', { class: 'antal', text: `${delar.length} st` }));
+    const ul = el('ul');
+    for (const d of delar) {
+      const knapp = el('button', { type: 'button', class: 'del-knapp', 'data-del': d.id, 'aria-pressed': String(valda.includes(d.id) && !valdGrupp) },
+        el('span', { text: d.namn }, d.approx ? el('span', { class: 'ca', text: ' ca' }) : null),
+        d.ref ? el('span', { class: 'ref', text: d.ref }) : null);
+      ul.append(el('li', {}, knapp));
+    }
+    listaEl.append(el('section', { class: 'grupp' }, rubrik, ul));
+  }
+  if (!listaEl.children.length) listaEl.append(el('p', { class: 'disclaimer', text: 'Inga delar matchar sökningen.' }));
+}
+
+function visaInfo() {
+  infoEl.replaceChildren();
+  if (valdGrupp) {
+    const g = gruppById.get(valdGrupp);
+    infoEl.append(el('h3', { text: `Grupp: ${g.namn}` }));
+    if (g.beskrivning) infoEl.append(el('p', { class: 'flode', text: g.beskrivning }));
+    const ca = valda.filter((id) => delById.get(id).approx).length;
+    infoEl.append(el('p', { text: `${valda.length} delar markerade${ca ? `, varav ${ca} med ungefärlig position` : ''}. Välj en del i listan eller i modellen för detaljer.` }));
+    return;
+  }
+  if (!valda.length) {
+    infoEl.append(el('p', { class: 'tom', text: 'Ingen del vald. Tryck på en del i modellen eller i listan.' }));
+    return;
+  }
+  for (const id of valda) {
+    const d = delById.get(id);
+    const g = gruppById.get(d.grupp);
+    const meta = el('div', { class: 'meta' },
+      el('span', { class: 'badge', 'data-variant': 'outline', text: g.namn }),
+      el('span', { class: 'badge', 'data-variant': 'secondary', text: d.ref ? `Ref: ${d.ref}` : 'Ref: saknas' }),
+      el('span', { class: 'badge', 'data-variant': d.approx ? 'outline' : 'secondary', text: d.approx ? 'Ungefärlig position' : 'Position belagd i stora drag' }));
+    const blk = el('div', {}, el('h3', { text: d.namn }), el('p', { text: d.beskrivning }), meta);
+    if (d.grupp === 'ac') blk.append(el('p', { class: 'flode', text: 'AC-flödet: kompressor → kondensor → torkfilter → expansionsventil → förångare → kompressor.' }));
+    if (d.source) blk.append(el('p', { class: 'kalla', text: `Källa: ${d.source}` }));
+    if (valda.length > 1) blk.style.marginBottom = '10px';
+    infoEl.append(blk);
+  }
+}
+
+function tillampa(fokus = true) {
+  byggLista();
+  visaInfo();
+  if (viewer) viewer.markera(valda, fokus);
+}
+
+function valjDelar(ids, { grupp = null, skrivHash = true, fokus = true } = {}) {
+  valda = ids.filter((id) => delById.has(id));
+  valdGrupp = grupp;
+  if (skrivHash) skrivUrl();
+  tillampa(fokus);
+}
+
+function valjGrupp(gid, opts = {}) {
+  if (!gruppById.has(gid)) return;
+  valjDelar(DELAR.filter((d) => d.grupp === gid).map((d) => d.id), { ...opts, grupp: gid });
+}
+
+function skrivUrl() {
+  const h = valdGrupp ? `grupp=${valdGrupp}` : (valda.length ? `del=${valda.join(',')}` : '');
+  history.replaceState(null, '', location.pathname + location.search + (h ? '#' + h : ''));
+}
+
+function lasHash() {
+  const h = decodeURIComponent(location.hash.replace(/^#/, '')) || STANDARD_HASH;
+  const p = new URLSearchParams(h);
+  if (p.get('del')) valjDelar(p.get('del').split(',').map((s) => s.trim()), { skrivHash: false });
+  else if (p.get('grupp')) valjGrupp(p.get('grupp').trim(), { skrivHash: false });
+  else valjDelar([], { skrivHash: false });
+}
+
+listaEl.addEventListener('click', (e) => {
+  const d = e.target.closest('[data-del]');
+  if (d) return valjDelar([d.dataset.del]);
+  const g = e.target.closest('[data-grupp]');
+  if (g) valjGrupp(g.dataset.grupp);
+});
+sokEl.addEventListener('input', byggLista);
+window.addEventListener('hashchange', lasHash);
+
+const toastEl = document.getElementById('toast');
+let toastTimer;
+function toast(t) {
+  toastEl.textContent = t;
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toastEl.classList.remove('show'), 1800);
+}
+document.getElementById('btn-kopiera').addEventListener('click', async () => {
+  skrivUrl();
+  const url = location.href;
+  try { await navigator.clipboard.writeText(url); toast('Länk kopierad'); }
+  catch { window.prompt('Kopiera länken:', url); }
+});
+document.getElementById('btn-exempel-ac').addEventListener('click', () => valjGrupp('ac'));
+
+const panel = document.getElementById('panel');
+const togglePanel = document.getElementById('toggle-panel');
+togglePanel.addEventListener('click', () => {
+  const dold = panel.classList.toggle('collapsed');
+  togglePanel.textContent = dold ? 'Visa' : 'Dölj';
+  togglePanel.setAttribute('aria-expanded', String(!dold));
+});
+
+// Karossens opacitet (slider + röntgenknapp)
+const slider = document.getElementById('opacitet');
+const sliderVarde = document.getElementById('opacitet-varde');
+const btnRontgen = document.getElementById('btn-rontgen');
+let senasteRontgen = 15;
+function satOpacitet(v) {
+  v = Math.max(0, Math.min(100, Math.round(v)));
+  slider.value = String(v);
+  sliderVarde.textContent = `${v} %`;
+  const rontgen = v < 60;
+  btnRontgen.textContent = rontgen ? 'Röntgen: på' : 'Röntgen: av';
+  btnRontgen.setAttribute('aria-pressed', String(rontgen));
+  if (rontgen) senasteRontgen = v;
+  if (viewer) viewer.opacitet(v / 100);
+}
+slider.addEventListener('input', () => satOpacitet(+slider.value));
+btnRontgen.addEventListener('click', () => satOpacitet(+slider.value < 60 ? 100 : senasteRontgen));
+
+lasHash();
+
+// ============================================================
+// 3D (laddas separat så att listan fungerar även om WebGL saknas)
+// ============================================================
+function harWebGL() {
+  try {
+    const c = document.createElement('canvas');
+    return !!(window.WebGLRenderingContext && (c.getContext('webgl2') || c.getContext('webgl')));
+  } catch { return false; }
+}
+function visaFallback(orsak) {
+  console.warn('3D-vyn kunde inte startas:', orsak);
+  document.getElementById('fallback').classList.add('show');
+  document.getElementById('note').style.display = 'none';
+  document.querySelectorAll('[data-vy], #btn-reset, #btn-rontgen, #btn-rotera, #opacitet').forEach((b) => { b.disabled = true; });
+}
+
+if (!harWebGL()) {
+  visaFallback('WebGL saknas');
+} else {
+  try {
+    viewer = await startaViewer();
+    viewer.opacitet(+slider.value / 100);
+    viewer.markera(valda, true, true);
+  } catch (err) {
+    viewer = null;
+    visaFallback(err && err.message ? err.message : err);
+  }
+}
+
+async function startaViewer() {
+  const THREE = await import('three');
+  const { OrbitControls } = await import('three/addons/controls/OrbitControls.js');
+  const { CSS2DRenderer, CSS2DObject } = await import('three/addons/renderers/CSS2DRenderer.js');
+  const { RoundedBoxGeometry } = await import('three/addons/geometries/RoundedBoxGeometry.js');
+  const V = (a) => new THREE.Vector3(a[0], a[1], a[2]);
+
+  const behallare = document.getElementById('viewer');
+  const morkt = () => document.documentElement.classList.contains('dark');
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.domElement.setAttribute('aria-hidden', 'true');
+  behallare.prepend(renderer.domElement);
+  const labelRenderer = new CSS2DRenderer({ element: document.getElementById('labels') });
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(40, 1, 0.05, 100);
+  const controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
+  controls.minDistance = 0.5;
+  controls.maxDistance = 14;
+  controls.autoRotateSpeed = 1.2;
+  controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
+
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x5a5a5a, 2.0));
+  const sol = new THREE.DirectionalLight(0xffffff, 1.6);
+  sol.position.set(3, 6, 2);
+  scene.add(sol);
+  const motljus = new THREE.DirectionalLight(0xffffff, 0.6);
+  motljus.position.set(-4, 3, -3);
+  scene.add(motljus);
+
+  // ---------- Mark och riktningsetiketter ----------
+  const grid = new THREE.GridHelper(8, 16, 0x888888, 0x888888);
+  grid.material.transparent = true;
+  grid.material.opacity = 0.22;
+  scene.add(grid);
+  const markText = [];
+  function markEtikett(text, x, z, rotZ) {
+    const c = document.createElement('canvas');
+    const ctx = c.getContext('2d');
+    ctx.font = '600 56px system-ui, sans-serif';
+    c.width = Math.ceil(ctx.measureText(text).width) + 24;
+    c.height = 76;
+    const rita = () => {
+      ctx.clearRect(0, 0, c.width, c.height);
+      ctx.font = '600 56px system-ui, sans-serif';
+      ctx.fillStyle = morkt() ? '#d4d4d8' : '#3f3f46';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, 12, c.height / 2);
+    };
+    rita();
+    const tex = new THREE.CanvasTexture(c);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    const h = 0.16;
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(h * c.width / c.height, h),
+      new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, side: THREE.DoubleSide }));
+    m.rotation.x = -Math.PI / 2;
+    m.rotation.z = rotZ;
+    m.position.set(x, 0.005, z);
+    scene.add(m);
+    markText.push(() => { rita(); tex.needsUpdate = true; });
+  }
+  markEtikett('FRAM', 2.8, 0, Math.PI / 2);
+  markEtikett('BAK', -2.85, 0, -Math.PI / 2);
+  markEtikett('VÄNSTER (förarsidan)', 0, -1.4, Math.PI);
+  markEtikett('HÖGER', 0, 1.4, 0);
+
+  // ============================================================
+  // Kaross: loftade tvärsnitt efter E91:s profil
+  // Längd 4 520, bredd 1 817, höjd 1 418, hjulbas 2 760, överhäng ca 0,80 fram och 0,96 bak (mm/m).
+  // ============================================================
+  const bil = new THREE.Group();
+  scene.add(bil);
+  const FRAM_X = 2.18, BAK_X = -2.34;
+  const lerpTab = (tab, x) => { // tab sorterad på x fallande
+    if (x >= tab[0][0]) return tab[0][1];
+    for (let i = 1; i < tab.length; i++) {
+      const [x1, y1] = tab[i];
+      if (x >= x1) { const [x0, y0] = tab[i - 1]; const t = (x - x0) / (x1 - x0); const s = t * t * (3 - 2 * t); return y0 + (y1 - y0) * (0.35 * t + 0.65 * s); }
+    }
+    return tab[tab.length - 1][1];
+  };
+  // Mittlinjens överkant: nos, motorhuv, vindruta, tak, bakruta, baklucka
+  const TOPP = [[2.18, 0.50], [2.16, 0.64], [2.11, 0.75], [2.02, 0.80], [1.70, 0.85], [1.30, 0.90], [1.00, 0.95], [0.62, 1.15], [0.22, 1.36], [0.0, 1.395], [-0.8, 1.41], [-1.6, 1.40], [-1.96, 1.375], [-2.08, 1.30], [-2.25, 1.04], [-2.31, 0.94], [-2.33, 0.70], [-2.34, 0.50]];
+  // Bältlinje (rutornas underkant / skärmarnas överkant)
+  const BALTE = [[2.18, 0.48], [2.12, 0.70], [1.90, 0.79], [1.40, 0.85], [1.00, 0.91], [0.40, 0.95], [-1.00, 0.98], [-2.05, 1.01], [-2.30, 0.96], [-2.34, 0.55]];
+  // Halv bredd vid axeln (planvy med rundade hörn), totalbredd 1 817
+  const HALVB = [[2.18, 0.66], [2.15, 0.79], [2.08, 0.86], [1.90, 0.895], [1.40, 0.905], [0.0, 0.9085], [-1.40, 0.905], [-2.05, 0.895], [-2.25, 0.86], [-2.32, 0.78], [-2.34, 0.66]];
+  // Halv bredd vid taket/huvkanten
+  const HALVT = [[2.18, 0.50], [2.10, 0.66], [1.60, 0.75], [1.00, 0.77], [0.22, 0.655], [-1.90, 0.645], [-2.20, 0.62], [-2.34, 0.52]];
+  const BOTTEN = [[2.18, 0.30], [2.12, 0.23], [1.90, 0.20], [-2.10, 0.21], [-2.30, 0.27], [-2.34, 0.32]];
+  const HJULHUS_R = 0.37, HJUL_R = 0.316, AXLAR = [1.38, -1.38];
+
+  // Kontrollpunkter per halva: c0 underkant, c1 axel, c2 bälte, c3 takkant, c4 rundning, c5 mitt
+  const SEG = [4, 2, 4, 2, 4]; // underdelningar mellan c0..c5
+  const PER_HALVA = SEG.reduce((a, b) => a + b, 0) + 1; // 17
+  const RAD_BALTE = SEG[0] + SEG[1];            // 6
+  const RAD_TAKKANT = RAD_BALTE + SEG[2];       // 10
+  const RING = PER_HALVA * 2 - 1;               // 33
+
+  function sektion(x) {
+    const topp = lerpTab(TOPP, x);
+    let balte = Math.min(lerpTab(BALTE, x), topp - 0.02);
+    const takkant = Math.max(balte, topp - 0.045);
+    const zb = lerpTab(HALVB, x);
+    const zt = Math.min(lerpTab(HALVT, x), zb - 0.06);
+    let botten = lerpTab(BOTTEN, x);
+    for (const ax of AXLAR) { const dx = x - ax; if (Math.abs(dx) < HJULHUS_R) botten = Math.max(botten, HJUL_R + Math.sqrt(HJULHUS_R ** 2 - dx * dx)); }
+    botten = Math.min(botten, balte - 0.06);
+    const axel = Math.max(botten + 0.03, botten + (balte - botten) * 0.72);
+    const r = Math.min(0.08, (topp - takkant) + 0.04);
+    const kontroll = [
+      [-(zb - 0.03), botten], [-zb, axel], [-(zb - 0.035), balte], [-zt, takkant], [-(zt - r), topp], [0, topp + (x > 1.0 ? 0.02 : 0.025)],
+    ];
+    const halva = [];
+    for (let s = 0; s < SEG.length; s++) {
+      const [z0, y0] = kontroll[s], [z1, y1] = kontroll[s + 1];
+      for (let k = 0; k < SEG[s]; k++) {
+        const t = k / SEG[s];
+        // lätt bombering på sidorna och taket
+        const bula = (s === 0 || s === 2) ? Math.sin(Math.PI * t) * 0.012 : (s === 4 ? Math.sin(Math.PI * t) * 0.01 : 0);
+        halva.push([z0 + (z1 - z0) * t - (s < 3 ? bula : 0), y0 + (y1 - y0) * t + (s === 4 ? bula : 0)]);
+      }
+    }
+    halva.push(kontroll[5]);
+    const ring = halva.map(([z, y]) => [x, y, z]);
+    for (let j = PER_HALVA - 2; j >= 0; j--) ring.push([x, halva[j][1], -halva[j][0]]);
+    return { ring, topp, balte, takkant };
+  }
+
+  const stationer = [2.18, 2.175, 2.165, 2.15, 2.13, 2.10, 2.06];
+  for (let x = 2.0; x > -2.26; x -= 0.05) stationer.push(+x.toFixed(3));
+  stationer.push(-2.28, -2.30, -2.315, -2.325, -2.335, -2.34);
+  const sektioner = stationer.map(sektion);
+
+  // Rutor: sidorutor mellan bälte och takkant (utom stolparna), vindruta och bakruta i takraderna
+  const PELARE = [[-0.20, -0.08], [-1.24, -1.12]];
+  const arSidoruta = (x, s) => x < 0.90 && x > -2.10 && (s.takkant - s.balte) > 0.13 && !PELARE.some(([a, b]) => x > a && x < b);
+  const arVindruta = (x) => (x < 0.94 && x > 0.27) || (x < -1.99 && x > -2.24);
+
+  const pos = [], idxPlat = [], idxGlas = [];
+  for (const s of sektioner) for (const p of s.ring) pos.push(...p);
+  for (let i = 0; i < sektioner.length - 1; i++) {
+    const xm = (stationer[i] + stationer[i + 1]) / 2;
+    const sm = sektioner[i];
+    for (let j = 0; j < RING - 1; j++) {
+      const a = i * RING + j, b = a + 1, c = a + RING, d = c + 1;
+      const jj = j < PER_HALVA - 1 ? j : RING - 2 - j; // spegla till vänster halva
+      let glas = false;
+      if (jj >= RAD_BALTE && jj < RAD_TAKKANT) glas = arSidoruta(xm, sm);
+      else if (jj >= RAD_TAKKANT + 2 && arVindruta(xm)) glas = true;
+      (glas ? idxGlas : idxPlat).push(a, c, b, b, c, d);
+    }
+  }
+  // Ändlock fram och bak
+  const lock = (i, omvand) => {
+    const s = sektioner[i];
+    const mitt = s.ring.reduce((acc, p) => [acc[0] + p[0] / RING, acc[1] + p[1] / RING, acc[2] + p[2] / RING], [0, 0, 0]);
+    const ci = pos.length / 3;
+    pos.push(...mitt);
+    for (let j = 0; j < RING - 1; j++) {
+      const a = i * RING + j, b = a + 1;
+      if (omvand) idxPlat.push(ci, b, a); else idxPlat.push(ci, a, b);
+    }
+  };
+  lock(0, false);
+  lock(sektioner.length - 1, true);
+
+  const karossGeo = new THREE.BufferGeometry();
+  karossGeo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  karossGeo.setIndex([...idxPlat, ...idxGlas]);
+  karossGeo.addGroup(0, idxPlat.length, 0);
+  karossGeo.addGroup(idxPlat.length, idxGlas.length, 1);
+  karossGeo.computeVertexNormals();
+  const platMat = new THREE.MeshStandardMaterial({ color: 0x9aa3ad, transparent: true, opacity: 0.15, depthWrite: false, roughness: 0.45, metalness: 0.2, side: THREE.DoubleSide });
+  const glasMat = new THREE.MeshStandardMaterial({ color: 0x2b3440, transparent: true, opacity: 0.1, depthWrite: false, roughness: 0.1, metalness: 0.4, side: THREE.DoubleSide });
+  const kaross = new THREE.Mesh(karossGeo, [platMat, glasMat]);
+  kaross.renderOrder = 10;
+  const karossGrupp = new THREE.Group();
+  karossGrupp.add(kaross);
+  bil.add(karossGrupp);
+
+  // Linjer: bälte, takkant, dörrar, huv, baklucka, hjulhus
+  const linjeMat = new THREE.LineBasicMaterial({ color: 0x6b7280, transparent: true, opacity: 0.6 });
+  const punktPa = (x, j) => { const s = sektion(x); return s.ring[j]; };
+  const linje = (pts) => karossGrupp.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts.map(V)), linjeMat));
+  const langsLinje = (j, x0, x1) => { const p = []; for (let i = 0; i < stationer.length; i++) { const x = stationer[i]; if (x <= x0 && x >= x1) p.push(sektioner[i].ring[j]); } linje(p); };
+  for (const sida of [0, 1]) {
+    const jr = (j) => (sida === 0 ? j : RING - 1 - j);
+    langsLinje(jr(0), FRAM_X, BAK_X);                       // underkant med hjulhus
+    langsLinje(jr(RAD_BALTE), FRAM_X - 0.02, BAK_X + 0.01); // bältlinje
+    langsLinje(jr(RAD_TAKKANT), 0.94, -2.10);               // takkant / rutornas överkant
+    langsLinje(jr(RAD_TAKKANT + 1), 2.10, 0.98);            // motorhuvens skarv
+    langsLinje(jr(2), 2.12, -2.30);                         // karaktärslinje
+    for (const x of [0.98, -0.14, -1.18]) {                 // dörrskarvar
+      const p = []; for (let j = 0; j <= RAD_TAKKANT; j++) p.push(punktPa(x, jr(j))); linje(p);
+    }
+    // Rutornas stolpar
+    for (const [a, b] of PELARE) for (const x of [a, b]) { const p = []; for (let j = RAD_BALTE; j <= RAD_TAKKANT; j++) p.push(punktPa(x, jr(j))); linje(p); }
+  }
+  for (const x of [0.94, 0.27, -1.99, -2.24, 2.10]) { // vindruta, bakruta, huvens framkant
+    const p = []; for (let j = RAD_TAKKANT; j <= RING - 1 - RAD_TAKKANT; j++) p.push(punktPa(x, j)); linje(p);
+  }
+  // Takreling (E91) och backspeglar
+  for (const s of [-1, 1]) {
+    const p = []; for (let x = 0.05; x >= -1.92; x -= 0.15) { const r = sektion(x).ring[s < 0 ? RAD_TAKKANT + 2 : RING - 3 - RAD_TAKKANT]; p.push([r[0], r[1] + 0.03, r[2] * 0.97]); }
+    const rel = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(p.map(V)), 30, 0.012, 6), platMat);
+    karossGrupp.add(rel);
+    const spegel = new THREE.Mesh(new RoundedBoxGeometry(0.12, 0.10, 0.16, 2, 0.03), platMat);
+    spegel.position.set(0.86, 0.99, s * 0.99);
+    karossGrupp.add(spegel);
+  }
+  // Njurgrill
+  for (const s of [-1, 1]) {
+    const n = new THREE.Mesh(new RoundedBoxGeometry(0.04, 0.12, 0.16, 2, 0.03), glasMat);
+    n.position.set(2.17, 0.66, s * 0.10);
+    karossGrupp.add(n);
+  }
+
+  // ---------- Hjul: däck 205/55R16 (diameter ca 632 mm) med fälg ----------
+  function hjulGeo(skala = 1) {
+    const R = HJUL_R * skala, rf = 0.203 * skala, b = 0.205 * skala / 2; // fälg 16 tum
+    const prof = [[rf, -b * 0.95], [R - 0.03, -b], [R - 0.006, -b * 0.75], [R, -b * 0.3], [R, b * 0.3], [R - 0.006, b * 0.75], [R - 0.03, b], [rf, b * 0.95]]
+      .map(([r, y]) => new THREE.Vector2(r, y));
+    const g = new THREE.LatheGeometry(prof, 32);
+    g.rotateX(Math.PI / 2);
+    return g;
+  }
+  const dackGeo = hjulGeo();
+  const dackMat = new THREE.MeshStandardMaterial({ color: 0x2a2a2e, transparent: true, opacity: 0.55, roughness: 0.9, depthWrite: false });
+  const falgMat = new THREE.MeshStandardMaterial({ color: 0xb8bcc2, transparent: true, opacity: 0.5, metalness: 0.6, roughness: 0.35, depthWrite: false });
+  const falgGeo = new THREE.CylinderGeometry(0.2, 0.2, 0.02, 24); falgGeo.rotateX(Math.PI / 2);
+  const ekerGeo = new THREE.BoxGeometry(0.03, 0.17, 0.02);
+  for (const [x, z] of [[1.38, -0.75], [1.38, 0.75], [-1.38, -0.757], [-1.38, 0.757]]) {
+    const h = new THREE.Group();
+    h.position.set(x, HJUL_R, z);
+    h.add(new THREE.Mesh(dackGeo, dackMat));
+    const ut = Math.sign(z) * 0.06;
+    const nav = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.03, 16).rotateX(Math.PI / 2), falgMat);
+    nav.position.z = ut; h.add(nav);
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.195, 0.012, 6, 32), falgMat);
+    ring.position.z = ut; h.add(ring);
+    for (let k = 0; k < 5; k++) {
+      const e = new THREE.Mesh(ekerGeo, falgMat);
+      e.position.z = ut;
+      e.rotation.z = (k / 5) * Math.PI * 2;
+      e.translateY(0.11);
+      h.add(e);
+    }
+    bil.add(h);
+  }
+  // Ratt (vänsterstyrd), instrumentbräda och stolar som orientering
+  const inredMat = new THREE.MeshStandardMaterial({ color: 0x52525b, transparent: true, opacity: 0.35, depthWrite: false });
+  const ratt = new THREE.Mesh(new THREE.TorusGeometry(0.19, 0.016, 8, 28), inredMat);
+  ratt.position.set(0.40, 0.92, -0.37); ratt.rotation.y = Math.PI / 2; ratt.rotation.x = -0.4;
+  karossGrupp.add(ratt);
+  const bord = new THREE.Mesh(new RoundedBoxGeometry(0.30, 0.22, 1.50, 2, 0.05), inredMat);
+  bord.position.set(0.66, 0.84, 0); karossGrupp.add(bord);
+  for (const [x, z] of [[-0.22, -0.38], [-0.22, 0.38]]) {
+    const sits = new THREE.Mesh(new RoundedBoxGeometry(0.50, 0.10, 0.50, 2, 0.04), inredMat); sits.position.set(x, 0.52, z); karossGrupp.add(sits);
+    const rygg = new THREE.Mesh(new RoundedBoxGeometry(0.10, 0.62, 0.48, 2, 0.04), inredMat); rygg.position.set(x - 0.30, 0.85, z); rygg.rotation.z = 0.2; karossGrupp.add(rygg);
+  }
+  const baksate = new THREE.Mesh(new RoundedBoxGeometry(0.48, 0.10, 1.30, 2, 0.04), inredMat); baksate.position.set(-1.05, 0.58, 0); karossGrupp.add(baksate);
+
+  // ---------- Delar ----------
+  const ramar = {};
+  for (const [k, r] of Object.entries(RAMAR)) {
+    const o = new THREE.Object3D();
+    o.position.set(...r.pos); o.rotation.set(...r.rot);
+    bil.add(o); ramar[k] = o;
+  }
+  const geoCache = new Map();
+  function byggGeo(f) {
+    const key = JSON.stringify([f.form, f.storlek, f.axel, f.banor, f.radie, f.sluten]);
+    if (geoCache.has(key)) return geoCache.get(key);
+    let g;
+    const s = f.storlek || [];
+    switch (f.form) {
+      case 'box': g = new THREE.BoxGeometry(...s); break;
+      case 'rbox': g = new RoundedBoxGeometry(s[0], s[1], s[2], 2, Math.min(...s) * 0.25); break;
+      case 'sphere': g = new THREE.SphereGeometry(s[0], 14, 10); break;
+      case 'hjul': g = hjulGeo(1.03); break;
+      case 'ring': g = new THREE.TorusGeometry(s[0], s[1], 8, 28); break;
+      case 'cylinder': case 'kon': {
+        const [r1, r2, l] = f.form === 'kon' ? s : [s[0], s[0], s[1]];
+        g = new THREE.CylinderGeometry(r1, r2, l, 20);
+        if (f.axel === 'x') g.rotateZ(-Math.PI / 2);
+        if (f.axel === 'z') g.rotateX(Math.PI / 2);
+        break;
+      }
+      default: g = new THREE.BoxGeometry(0.05, 0.05, 0.05);
+    }
+    geoCache.set(key, g);
+    return g;
+  }
+  const delObjekt = new Map();
+  const plockbara = [];
+  const osynligMat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false, colorWrite: false });
+  for (const d of DELAR) {
+    const farg = new THREE.Color(gruppById.get(d.grupp).farg);
+    const mat = new THREE.MeshStandardMaterial({ color: farg, transparent: true, opacity: 0.6, roughness: 0.55, metalness: 0.15 });
+    const g = new THREE.Group();
+    const bas = d.pos || [0, 0, 0];
+    g.position.set(...bas);
+    let former = d.former;
+    if (!former) {
+      former = [{ ...d, pos: [0, 0, 0] }];
+      for (const p of d.fler || []) former.push({ ...d, pos: [p[0] - bas[0], p[1] - bas[1], p[2] - bas[2]] });
+    }
+    for (const f of former) {
+      if (f.form === 'tube') {
+        for (const bana of f.banor) {
+          const kurva = new THREE.CatmullRomCurve3(bana.map(V), !!f.sluten);
+          const m = new THREE.Mesh(new THREE.TubeGeometry(kurva, Math.max(16, bana.length * 12), f.radie || 0.012, 8, !!f.sluten), mat);
+          m.userData.delId = d.id;
+          g.add(m);
+          // Osynligt tjockare rör så att tunna ledningar går att träffa med fingret
+          const pm = new THREE.Mesh(new THREE.TubeGeometry(kurva, 16, Math.max(0.045, (f.radie || 0.012) * 2.5), 5, !!f.sluten), osynligMat);
+          pm.userData.delId = d.id;
+          g.add(pm);
+          plockbara.push(pm);
+        }
+      } else {
+        const m = new THREE.Mesh(byggGeo(f), mat);
+        if (f.pos) m.position.set(...f.pos);
+        if (f.rot) m.rotation.set(...f.rot);
+        m.userData.delId = d.id;
+        g.add(m);
+        plockbara.push(m);
+      }
+    }
+    (d.ram ? ramar[d.ram] : bil).add(g);
+    delObjekt.set(d.id, { g, mat, farg });
+  }
+  bil.updateMatrixWorld(true);
+  for (const [id, o] of delObjekt) {
+    const d = delById.get(id);
+    o.box = new THREE.Box3().setFromObject(o.g);
+    const etikett = new CSS2DObject(el('div', { class: 'del-etikett' }, el('span', { text: d.namn }), d.ref ? el('small', { text: d.ref }) : null));
+    const c = o.box.getCenter(new THREE.Vector3());
+    etikett.position.set(c.x, o.box.max.y, c.z);
+    etikett.visible = false;
+    scene.add(etikett);
+    o.etikett = etikett;
+  }
+
+  const gruppEtikettText = el('span');
+  const gruppEtikett = new CSS2DObject(el('div', { class: 'del-etikett' }, gruppEtikettText));
+  gruppEtikett.visible = false;
+  scene.add(gruppEtikett);
+
+  // ---------- Kamera ----------
+  const MITT = new THREE.Vector3(0, 0.6, 0);
+  const VYER = { fram: [1, 0.15, 0], bak: [-1, 0.15, 0], vanster: [0, 0.15, -1], hoger: [0, 0.15, 1], ovan: [-0.001, 1, 0], under: [0.001, -1, 0], start: [0.75, 0.42, -0.62] };
+  let anim = null;
+  const flygTill = (target, p, ms = 700) => { anim = { t0: performance.now(), ms, fromT: controls.target.clone(), toT: target.clone(), fromP: camera.position.clone(), toP: p.clone() }; };
+  function avstandFor(radie) {
+    const vfov = THREE.MathUtils.degToRad(camera.fov);
+    const hfov = 2 * Math.atan(Math.tan(vfov / 2) * camera.aspect);
+    return radie / Math.sin(Math.min(vfov, hfov) / 2);
+  }
+  const visaVy = (namn, ms = 700) => flygTill(MITT, MITT.clone().addScaledVector(V(VYER[namn]).normalize(), avstandFor(2.4)), ms);
+  function fokusera(ids, direkt = false) {
+    if (!ids.length) return;
+    const box = new THREE.Box3();
+    for (const id of ids) box.union(delObjekt.get(id).box);
+    const center = box.getCenter(new THREE.Vector3());
+    const radie = Math.max(0.35, box.getSize(new THREE.Vector3()).length() / 2);
+    let dir = camera.position.clone().sub(controls.target).normalize();
+    if (direkt || !isFinite(dir.x)) dir = V(VYER.start).normalize();
+    flygTill(center, center.clone().addScaledVector(dir, avstandFor(radie * (ids.length > 4 ? 1.4 : 1.15)) + 0.25), direkt ? 0 : 800);
+  }
+
+  // ---------- Markering ----------
+  let markerade = new Set();
+  function markera(ids, fokus = true, direkt = false) {
+    markerade = new Set(ids);
+    const nagot = markerade.size > 0;
+    for (const [id, o] of delObjekt) {
+      const vald = markerade.has(id);
+      o.mat.color.set(vald ? 0xff5a1f : o.farg);
+      o.mat.emissive.set(vald ? 0xff5a1f : 0x000000);
+      o.mat.opacity = vald ? 0.95 : (nagot ? 0.25 : 0.6);
+      o.mat.depthWrite = vald;
+      o.etikett.visible = vald && markerade.size <= 4;
+    }
+    gruppEtikett.visible = false;
+    if (valdGrupp && markerade.size > 4) {
+      const box = new THREE.Box3();
+      for (const id of markerade) box.union(delObjekt.get(id).box);
+      const c = box.getCenter(new THREE.Vector3());
+      gruppEtikett.position.set(c.x, box.max.y + 0.05, c.z);
+      gruppEtikettText.textContent = gruppById.get(valdGrupp).namn;
+      gruppEtikett.visible = true;
+    }
+    if (fokus && nagot) fokusera([...markerade], direkt);
+  }
+  function opacitet(v) {
+    karossGrupp.visible = v > 0.001;
+    const fast = v >= 0.999;
+    platMat.opacity = v; platMat.transparent = !fast; platMat.depthWrite = fast;
+    glasMat.opacity = Math.min(0.55, 0.1 + v * 0.45);
+    inredMat.opacity = Math.min(0.35, v * 2);
+    linjeMat.opacity = Math.min(0.75, 0.25 + v);
+    platMat.needsUpdate = true;
+  }
+
+  // ---------- Klick / tapp ----------
+  const ray = new THREE.Raycaster();
+  const ndc = new THREE.Vector2();
+  let ner = null;
+  renderer.domElement.addEventListener('pointerdown', (e) => { ner = { x: e.clientX, y: e.clientY }; });
+  renderer.domElement.addEventListener('pointerup', (e) => {
+    if (!ner || Math.hypot(e.clientX - ner.x, e.clientY - ner.y) > 6) { ner = null; return; }
+    ner = null;
+    const r = renderer.domElement.getBoundingClientRect();
+    ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+    ray.setFromCamera(ndc, camera);
+    const traff = ray.intersectObjects(plockbara, false);
+    if (traff.length) { satRotation(false); valjDelar([traff[0].object.userData.delId]); }
+  });
+
+  // ---------- Knappar ----------
+  document.querySelectorAll('[data-vy]').forEach((b) => b.addEventListener('click', () => visaVy(b.dataset.vy)));
+  document.getElementById('btn-reset').addEventListener('click', () => visaVy('start'));
+  const btnRotera = document.getElementById('btn-rotera');
+  function satRotation(pa) {
+    controls.autoRotate = pa;
+    btnRotera.textContent = pa ? 'Rotation: på' : 'Rotation: av';
+    btnRotera.setAttribute('aria-pressed', String(pa));
+  }
+  btnRotera.addEventListener('click', () => satRotation(!controls.autoRotate));
+
+  function tema() {
+    const d = morkt();
+    platMat.color.set(d ? 0xb4bcc6 : 0x8f99a4);
+    glasMat.color.set(d ? 0x7a8696 : 0x2b3440);
+    linjeMat.color.set(d ? 0xa1a1aa : 0x52525b);
+    markText.forEach((f) => f());
+  }
+  tema();
+  new MutationObserver(tema).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+
+  function storlek() {
+    const w = Math.max(1, behallare.clientWidth), h = Math.max(1, behallare.clientHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setSize(w, h, false);
+    labelRenderer.setSize(w, h);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+  }
+  storlek();
+  new ResizeObserver(storlek).observe(behallare);
+  visaVy('start', 0);
+  camera.position.copy(anim.toP); controls.target.copy(anim.toT); anim = null;
+
+  const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+  renderer.setAnimationLoop((now) => {
+    if (anim) {
+      const t = anim.ms ? Math.min(1, (now - anim.t0) / anim.ms) : 1;
+      const k = ease(t);
+      controls.target.lerpVectors(anim.fromT, anim.toT, k);
+      camera.position.lerpVectors(anim.fromP, anim.toP, k);
+      if (t >= 1) anim = null;
+    }
+    const puls = 0.3 + 0.35 * (0.5 + 0.5 * Math.sin(now / 220));
+    for (const id of markerade) delObjekt.get(id).mat.emissiveIntensity = puls;
+    controls.update();
+    renderer.render(scene, camera);
+    labelRenderer.render(scene, camera);
+  });
+
+  return { markera, opacitet };
+}
+</script>
+</body>
+</html>
