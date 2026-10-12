@@ -98,7 +98,7 @@
   #info .filmer { margin: 8px 0 4px; padding-top: 8px; border-top: 1px solid var(--border); }
   #info .filmer h4 { font-size: 12px; font-weight: 600; margin: 0 0 6px; }
   #info .filmer .knappar { display: flex; flex-wrap: wrap; gap: 6px; }
-  #info .filmer a.btn { text-decoration: none; font-size: 12px; height: auto; padding: 6px 10px; white-space: normal; text-align: left; }
+  #info .filmer a.btn { text-decoration: none; font-size: 12px; height: auto; padding: 6px 10px; white-space: normal !important; text-align: left; max-width: 100%; min-width: 0; overflow-wrap: anywhere; justify-content: flex-start; }
   .grupp { margin: 0; }
   .grupp-rubrik { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; background: none; border: 0; padding: 6px 4px; font-weight: 600; font-size: 13px; color: inherit; cursor: pointer; border-radius: 6px; }
   .grupp-rubrik:hover, .del-knapp:hover { background: var(--accent); }
@@ -240,6 +240,16 @@ const DELAR = [
     source: K_ETK + ' (11 36 VANOS). Exakt höjd ej uppmätt.', approx: true, ram: 'motor', pos: [0.35, 0.36, 0], former: [
       { form: 'cylinder', pos: [0, 0, -0.055], storlek: [0.02, 0.07], axel: 'x' },
       { form: 'cylinder', pos: [0, 0, 0.055], storlek: [0.02, 0.07], axel: 'x' },
+    ] },
+  { id: 'vanos-backventiler', namn: 'VANOS-backventiler (2 st)', grupp: 'motor', ref: '86 del 7-8', beskrivning: 'Två backventiler med filtersil i topplockets oljematning till VANOS, på avgassidan framför avgasporten till cylinder 1. Släpper bara in olja åt ett håll och fångar smuts före solenoiderna.',
+    source: K_ETK + ' (11 36 7 541 692, 2 st, övre insug och undre avgas). Läge enligt DIY-beskrivningar (e90post, 5series.net), ej uppmätt.', approx: true, ram: 'motor', pos: [0.29, 0.30, 0.12], former: [
+      { form: 'cylinder', pos: [0, 0.03, 0], storlek: [0.012, 0.035], axel: 'z' },
+      { form: 'cylinder', pos: [0, -0.03, 0], storlek: [0.012, 0.035], axel: 'z' },
+    ] },
+  { id: 'spridare', namn: 'Spridare (6 st) och bränsleskena', grupp: 'motor', ref: '64 U.5, 39', beskrivning: 'Portspridare, en per cylinder, i insugskanalerna under insugsgrenröret på vänster sida. Matas av bränsleskenan. Cylinder 1 längst fram.',
+    source: K_ETK + ' (13 53 7 531 634, 6 st; 13 53 Bränsleskena). Läge under insugsgrenröret enligt BMW:s reparationsanvisning 13 53 240, ej uppmätt.', approx: true, ram: 'motor', pos: [0, 0.32, -0.16], former: [
+      ...[-0.25, -0.15, -0.05, 0.05, 0.15, 0.25].map((x) => ({ form: 'cylinder', pos: [x, 0, 0], storlek: [0.009, 0.07], axel: 'y' })),
+      { form: 'tube', radie: 0.011, banor: [[[-0.28, 0.045, -0.01], [0.28, 0.045, -0.01]]] },
     ] },
   { id: 'oljefilterhus', namn: 'Oljefilterhus', grupp: 'motor', ref: '61 B9', beskrivning: 'Sitter framtill på motorns vänstra sida (insugssidan) med filterlocket uppåt. Packningen mot blocket är en känd läckpunkt.',
     source: K_ETK + ' (11 42 Oljefilter); placering vänster fram enligt forum (bimmerforums, e90post).', approx: true,
@@ -445,6 +455,9 @@ const FILMER = {
     ],
   },
   del: {
+    'vanos-backventiler': [
+      { titel: 'VANOS-backventilerna ut, N52 i 130i (samma motor, dokument 86)', url: 'https://www.youtube.com/watch?v=VQweif8dHFg' },
+    ],
     'vanos-solenoider': [
       { titel: 'Rengöra VANOS-solenoiden på N52 (JD Cars, engelska)', url: 'https://www.youtube.com/watch?v=VISAuU6DJdo' },
       { titel: 'Byta VANOS-solenoiderna, E90 (findfixxflip, engelska)', url: 'https://www.youtube.com/watch?v=Kieb0WIFfn0' },
@@ -473,6 +486,14 @@ function filmBlock(filmer, rubrik) {
 }
 
 const NOTER = {
+  'vanos-backventiler': {
+    arbete: 'Inte gjorda. Skruva ur, fotografera silarna, rengör, nya o-ringar, 15 Nm. Byt ventil bara om silen inte blir ren.',
+    inkop: 'O-ringar 11 36 7 507 729, 2 x 69 kr (köp nu). Ventil 11 36 7 541 692 original 549 kr/st, bara vid behov.',
+    timing: 'Vid AC-rörbytet, när höger hjulhus och AC-ledningen ändå är borta. Snarast om 2A87 kommer tillbaka.' },
+  'spridare': {
+    arbete: 'Inget konstaterat behov. Läs bränsletrimmarna per bank och deras absoluta värde i BimmerLink.',
+    inkop: 'Bara vid behov: begagnad original 679 kr/st, ny original ca 2 300 kr/st. Byt bara den dåliga.',
+    timing: 'Efter OBD-läsningen. Båda bankerna högt plus och pumpen friad: flödestest och rengöring.' },
   'ventilkapa': {
     arbete: 'Ventilkåpans packning är en möjlig läckpunkt (B9). Byts bara om läcksökningen pekar hit.',
     inkop: 'Febi 27494, 501 kr (Autodoc) + nya skruvar.',
