@@ -1,6 +1,13 @@
 {
-  "generatedAt": "2026-06-13T10:56:24.266Z",
+  "generatedAt": "2026-10-12T19:28:49.037Z",
   "deployed": [
+    {
+      "slug": "prataleken",
+      "title": "Prataleken (kids voice game)",
+      "description": "",
+      "url": "https://prataleken.vercel.app",
+      "lastCommit": "2026-07-08T23:26:55Z"
+    },
     {
       "slug": "sleepy-hour",
       "title": "Bed time",
