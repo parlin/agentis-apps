@@ -95,6 +95,10 @@
   #info dl.noter { display: grid; grid-template-columns: max-content 1fr; gap: 4px 10px; margin: 8px 0 4px; padding-top: 8px; border-top: 1px solid var(--border); }
   #info dl.noter dt { font-weight: 600; }
   #info dl.noter dd { margin: 0; }
+  #info .filmer { margin: 8px 0 4px; padding-top: 8px; border-top: 1px solid var(--border); }
+  #info .filmer h4 { font-size: 12px; font-weight: 600; margin: 0 0 6px; }
+  #info .filmer .knappar { display: flex; flex-wrap: wrap; gap: 6px; }
+  #info .filmer a.btn { text-decoration: none; font-size: 12px; height: auto; padding: 6px 10px; white-space: normal; text-align: left; }
   .grupp { margin: 0; }
   .grupp-rubrik { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; background: none; border: 0; padding: 6px 4px; font-weight: 600; font-size: 13px; color: inherit; cursor: pointer; border-radius: 6px; }
   .grupp-rubrik:hover, .del-knapp:hover { background: var(--accent); }
@@ -426,6 +430,48 @@ const DELAR = [
 // arbete = vad som bör göras, inkop = ungefärligt inköpspris från researchen, timing = när.
 // Belopp inkl. moms. Ref-numren pekar på dokumenten i context/projects/project-bil-dakkar/.
 // ============================================================
+// ============================================================
+// FILMER - instruktions- och infofilmer per del och per grupp. Gruppens filmer
+// visas även när en enskild del i gruppen är vald. Bara verifierade länkar.
+// ============================================================
+const FILMER = {
+  grupp: {
+    ac: [
+      { titel: 'Så fungerar bilens AC (GarageTech, engelska)', url: 'https://www.youtube.com/watch?v=I5rrZSu4PxQ' },
+      { titel: 'AC-systemets grunder (EricTheCarGuy, engelska)', url: 'https://www.youtube.com/watch?v=w17DpGCcRj8' },
+    ],
+    motor: [
+      { titel: '9 delar som går sönder på N52 vid hög mil (BMW Doctor, engelska, se dokument 77)', url: 'https://www.youtube.com/watch?v=sxrj1e9SOHQ' },
+    ],
+  },
+  del: {
+    'vanos-solenoider': [
+      { titel: 'Rengöra VANOS-solenoiden på N52 (JD Cars, engelska)', url: 'https://www.youtube.com/watch?v=VISAuU6DJdo' },
+      { titel: 'Byta VANOS-solenoiderna, E90 (findfixxflip, engelska)', url: 'https://www.youtube.com/watch?v=Kieb0WIFfn0' },
+      { titel: 'VANOS-backventilerna ut, N52 i 130i (samma motor, dokument 86)', url: 'https://www.youtube.com/watch?v=VQweif8dHFg' },
+    ],
+    'oljefilterhus': [
+      { titel: 'Oljefilterhusets packningar, N52 (AcureTech, tyska)', url: 'https://www.youtube.com/watch?v=8h1nouIEpw8' },
+      { titel: 'Termostatslang och oljefilterhusets packning, E90 (datboi fixit, engelska)', url: 'https://www.youtube.com/watch?v=AjVwS-TEeck' },
+    ],
+    'termostat': [
+      { titel: 'Termostatslang och oljefilterhusets packning, E90 (datboi fixit, engelska)', url: 'https://www.youtube.com/watch?v=AjVwS-TEeck' },
+    ],
+    'kupeflakt': [
+      { titel: 'Kupéfläkten ut, E90 328xi (Nathans BMW Workshop, engelska)', url: 'https://www.youtube.com/watch?v=LOxmpJqXHIo' },
+    ],
+    'vaxelvaljare': [
+      { titel: 'Växelväljaren: DS- och manuellt läge, E90 (dokument 79)', url: 'https://www.youtube.com/watch?v=NQysOv1MqbE' },
+    ],
+  },
+};
+function filmBlock(filmer, rubrik) {
+  if (!filmer || !filmer.length) return null;
+  const knappar = el('div', { class: 'knappar' });
+  for (const f of filmer) knappar.append(el('a', { class: 'btn', href: f.url, target: '_blank', rel: 'noopener', text: '▶ ' + f.titel }));
+  return el('div', { class: 'filmer' }, el('h4', { text: rubrik }), knappar);
+}
+
 const NOTER = {
   'ventilkapa': {
     arbete: 'Ventilkåpans packning är en möjlig läckpunkt (B9). Byts bara om läcksökningen pekar hit.',
@@ -574,6 +620,8 @@ function visaInfo() {
     if (g.beskrivning) infoEl.append(el('p', { class: 'flode', text: g.beskrivning }));
     const ca = valda.filter((id) => delById.get(id).approx).length;
     infoEl.append(el('p', { text: `${valda.length} delar markerade${ca ? `, varav ${ca} med ungefärlig position` : ''}. Välj en del i listan eller i modellen för detaljer.` }));
+    const fb = filmBlock(FILMER.grupp[valdGrupp], 'Filmer');
+    if (fb) infoEl.append(fb);
     return;
   }
   if (!valda.length) {
@@ -596,6 +644,10 @@ function visaInfo() {
       }
       blk.append(dl);
     }
+    const fd = filmBlock(FILMER.del[d.id], 'Filmer om delen');
+    if (fd) blk.append(fd);
+    const fg = filmBlock(FILMER.grupp[d.grupp], `Filmer om ${g.namn.toLowerCase()}`);
+    if (fg) blk.append(fg);
     if (d.grupp === 'ac') blk.append(el('p', { class: 'flode', text: 'AC-flödet: kompressor → kondensor → torkfilter → expansionsventil → förångare → kompressor.' }));
     if (d.source) blk.append(el('p', { class: 'kalla', text: `Källa: ${d.source}` }));
     if (valda.length > 1) blk.style.marginBottom = '10px';
