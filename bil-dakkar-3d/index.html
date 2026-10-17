@@ -393,6 +393,10 @@ const DELAR = [
     source: K_ETK + ' (61 35 Fotrumsmodul).', approx: true, pos: [0.78, 0.42, -0.72], form: 'box', storlek: [0.14, 0.16, 0.04] },
   { id: 'batteri', namn: 'Batteri', grupp: 'el', ref: '', beskrivning: 'I bagaget under golvet, på höger sida.',
     source: K_ETK + ' (61 21 Batteri); mått från ett 90 Ah AGM-batteri (353 x 175 x 190 mm).', pos: [-1.98, 0.40, 0.55], form: 'rbox', storlek: [0.35, 0.19, 0.175] },
+  { id: 'sakringsdosa', namn: 'Säkringsdosa (handskfacket)', grupp: 'el', ref: '61 B30', beskrivning: 'Huvudsäkringsdosan bakom handskfacket på passagerarsidan. Öppna handskfacket och ta loss locket i taket på facket, så fäller panelen ner. Säkringsplanen sitter på en lapp där. Här sitter säkringarna för bland annat 12 V-uttagen.',
+    source: 'BMW E91 instruktionsbok (Säkringar); ' + K_ETK + ' (61 13 Säkringshållare).', approx: true, pos: [0.70, 0.76, 0.42], form: 'box', storlek: [0.06, 0.10, 0.26] },
+  { id: 'sakringsdosa-bagage', namn: 'Säkringsdosa bagage', grupp: 'el', ref: '', beskrivning: 'Strömfördelningen med de stora säkringarna i bagagets högra sida, bakom sidoklädseln vid batteriet.',
+    source: K_ETK + ' (61 13 Strömfördelare bak).', approx: true, pos: [-1.80, 0.55, 0.62], form: 'box', storlek: [0.16, 0.12, 0.05] },
   { id: 'stralkastare-vanster', namn: 'Strålkastare vänster', grupp: 'el', ref: '69', beskrivning: 'Vänster strålkastare.',
     source: K_ETK + ' (63 11 Strålkastare).', pos: [1.99, 0.72, -0.58], form: 'rbox', storlek: [0.22, 0.12, 0.30] },
   { id: 'stralkastare-hoger', namn: 'Strålkastare höger', grupp: 'el', ref: '69', beskrivning: 'Höger strålkastare.',
@@ -563,6 +567,10 @@ const NOTER = {
   'frm-ljusmodul': {
     arbete: 'Läs felminnet tillsammans med lyktkoden.',
     timing: 'Nästa verkstadsbesök.' },
+  'sakringsdosa': {
+    arbete: 'Kontrollera säkringen för uttaget mellan framsätena (B30). Byt bara mot samma ampere.',
+    inkop: 'Säkringar, några kr.',
+    timing: 'När det passar.' },
   'batteri': {
     arbete: 'Ålder okänd och belastningstest ogjort. Måste testas innan DME-programvaran uppdateras (F03).',
     timing: 'Före DME-uppdateringen.' },
