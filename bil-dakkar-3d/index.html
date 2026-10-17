@@ -888,6 +888,9 @@ async function startaViewer() {
   // ============================================================
   // Kaross: loftade tvärsnitt efter E91:s profil
   // Längd 4 520, bredd 1 817, höjd 1 418, hjulbas 2 760, överhäng ca 0,80 fram och 0,96 bak (mm/m).
+  // Mått och spårvidd (1 500 fram, 1 513 bak): auto-data.net, "BMW 3 Series Touring (E91) 325xi".
+  // Profilen (huv, vindruta, tak, baklucka, bälte och karaktärslinje) är egen geometri, uppskattad efter
+  // E91 före LCI (2005-2008) och skalad mot måtten ovan. Ingen ritning eller modell kopierad.
   // ============================================================
   const bil = new THREE.Group();
   scene.add(bil);
@@ -901,22 +904,27 @@ async function startaViewer() {
     return tab[tab.length - 1][1];
   };
   // Mittlinjens överkant: nos, motorhuv, vindruta, tak, bakruta, baklucka
-  const TOPP = [[2.18, 0.50], [2.16, 0.64], [2.11, 0.75], [2.02, 0.80], [1.70, 0.85], [1.30, 0.90], [1.00, 0.95], [0.62, 1.15], [0.22, 1.36], [0.0, 1.395], [-0.8, 1.41], [-1.6, 1.40], [-1.96, 1.375], [-2.08, 1.30], [-2.25, 1.04], [-2.31, 0.94], [-2.33, 0.70], [-2.34, 0.50]];
-  // Bältlinje (rutornas underkant / skärmarnas överkant)
-  const BALTE = [[2.18, 0.48], [2.12, 0.70], [1.90, 0.79], [1.40, 0.85], [1.00, 0.91], [0.40, 0.95], [-1.00, 0.98], [-2.05, 1.01], [-2.30, 0.96], [-2.34, 0.55]];
+  // Nosen lutar framåt nedtill (njurarna), lång huv som stiger mot torpedväggen, flackt tak långt bak,
+  // takspoiler, ganska upprätt bakruta och en nästan lodrät nedre baklucka med lyktorna.
+  const TOPP = [[2.18, 0.54], [2.165, 0.66], [2.13, 0.75], [2.07, 0.815], [1.90, 0.855], [1.50, 0.915], [1.00, 0.975], [0.62, 1.16], [0.22, 1.35], [0.0, 1.375], [-0.8, 1.393], [-1.6, 1.385], [-1.98, 1.365], [-2.04, 1.33], [-2.21, 1.03], [-2.31, 0.99], [-2.325, 0.90], [-2.335, 0.70], [-2.34, 0.50]];
+  // Bältlinje (rutornas underkant / skärmarnas överkant), stiger svagt bakåt
+  const BALTE = [[2.18, 0.52], [2.13, 0.74], [1.95, 0.81], [1.40, 0.88], [1.00, 0.945], [0.40, 0.97], [-1.00, 0.995], [-2.05, 1.025], [-2.30, 0.985], [-2.34, 0.58]];
+  // Karaktärslinjen (skulderlinjen): från strålkastarens ytterhörn, över dörrhandtagen, upp mot baklyktan
+  const SKULDRA = [[2.12, 0.70], [1.85, 0.775], [1.00, 0.805], [0.0, 0.83], [-1.20, 0.86], [-2.10, 0.895], [-2.34, 0.87]];
   // Halv bredd vid axeln (planvy med rundade hörn), totalbredd 1 817
-  const HALVB = [[2.18, 0.66], [2.15, 0.79], [2.08, 0.86], [1.90, 0.895], [1.40, 0.905], [0.0, 0.9085], [-1.40, 0.905], [-2.05, 0.895], [-2.25, 0.86], [-2.32, 0.78], [-2.34, 0.66]];
+  const HALVB = [[2.18, 0.62], [2.15, 0.77], [2.08, 0.855], [1.90, 0.895], [1.40, 0.905], [0.0, 0.9085], [-1.40, 0.905], [-2.05, 0.895], [-2.25, 0.86], [-2.32, 0.80], [-2.34, 0.68]];
   // Halv bredd vid taket/huvkanten
   const HALVT = [[2.18, 0.50], [2.10, 0.66], [1.60, 0.75], [1.00, 0.77], [0.22, 0.655], [-1.90, 0.645], [-2.20, 0.62], [-2.34, 0.52]];
-  const BOTTEN = [[2.18, 0.30], [2.12, 0.23], [1.90, 0.20], [-2.10, 0.21], [-2.30, 0.27], [-2.34, 0.32]];
+  const BOTTEN = [[2.18, 0.36], [2.15, 0.25], [2.08, 0.21], [1.90, 0.20], [-2.10, 0.21], [-2.30, 0.27], [-2.34, 0.34]];
   const HJULHUS_R = 0.37, HJUL_R = 0.316, AXLAR = [1.38, -1.38];
 
   // Kontrollpunkter per halva: c0 underkant, c1 axel, c2 bälte, c3 takkant, c4 rundning, c5 mitt
-  const SEG = [4, 2, 4, 2, 4]; // underdelningar mellan c0..c5
-  const PER_HALVA = SEG.reduce((a, b) => a + b, 0) + 1; // 17
+  const SEG = [4, 2, 6, 2, 4]; // underdelningar mellan c0..c5
+  const PER_HALVA = SEG.reduce((a, b) => a + b, 0) + 1; // 19
+  const RAD_SKULDRA = SEG[0];                   // 4
   const RAD_BALTE = SEG[0] + SEG[1];            // 6
-  const RAD_TAKKANT = RAD_BALTE + SEG[2];       // 10
-  const RING = PER_HALVA * 2 - 1;               // 33
+  const RAD_TAKKANT = RAD_BALTE + SEG[2];       // 12
+  const RING = PER_HALVA * 2 - 1;               // 37
 
   function sektion(x) {
     const topp = lerpTab(TOPP, x);
@@ -927,10 +935,10 @@ async function startaViewer() {
     let botten = lerpTab(BOTTEN, x);
     for (const ax of AXLAR) { const dx = x - ax; if (Math.abs(dx) < HJULHUS_R) botten = Math.max(botten, HJUL_R + Math.sqrt(HJULHUS_R ** 2 - dx * dx)); }
     botten = Math.min(botten, balte - 0.06);
-    const axel = Math.max(botten + 0.03, botten + (balte - botten) * 0.72);
+    const axel = Math.min(balte - 0.03, Math.max(botten + 0.03, lerpTab(SKULDRA, x)));
     const r = Math.min(0.08, (topp - takkant) + 0.04);
     const kontroll = [
-      [-(zb - 0.03), botten], [-zb, axel], [-(zb - 0.035), balte], [-zt, takkant], [-(zt - r), topp], [0, topp + (x > 1.0 ? 0.02 : 0.025)],
+      [-(zb - 0.045), botten], [-zb, axel], [-(zb - 0.045), balte], [-zt, takkant], [-(zt - r), topp], [0, topp + (x > 1.0 ? 0.02 : 0.025)],
     ];
     const halva = [];
     for (let s = 0; s < SEG.length; s++) {
@@ -953,10 +961,13 @@ async function startaViewer() {
   stationer.push(-2.28, -2.30, -2.315, -2.325, -2.335, -2.34);
   const sektioner = stationer.map(sektion);
 
-  // Rutor: sidorutor mellan bälte och takkant (utom stolparna), vindruta och bakruta i takraderna
+  // Rutor: sidorutor mellan bälte och takkant (utom stolparna), vindruta och bakruta i takraderna.
+  // Bakre sidorutans bakkant (D-stolpen) som funktion av höjden t (0 = bälte, 1 = takkant):
+  // underkanten slutar tidigt och viker uppåt bakåt, Hofmeister-knicken.
+  const RUTA_BAK = [[1, -2.03], [0.55, -2.08], [0.25, -2.0], [0, -1.86]];
   const PELARE = [[-0.20, -0.08], [-1.24, -1.12]];
-  const arSidoruta = (x, s) => x < 0.90 && x > -2.10 && (s.takkant - s.balte) > 0.13 && !PELARE.some(([a, b]) => x > a && x < b);
-  const arVindruta = (x) => (x < 0.94 && x > 0.27) || (x < -1.99 && x > -2.24);
+  const arSidoruta = (x, s, t) => x < 0.90 && x > lerpTab(RUTA_BAK, t) && (s.takkant - s.balte) > 0.13 && !PELARE.some(([a, b]) => x > a && x < b);
+  const arVindruta = (x) => (x < 0.94 && x > 0.27) || (x < -2.01 && x > -2.20);
 
   const pos = [], idxPlat = [], idxGlas = [];
   for (const s of sektioner) for (const p of s.ring) pos.push(...p);
@@ -967,7 +978,7 @@ async function startaViewer() {
       const a = i * RING + j, b = a + 1, c = a + RING, d = c + 1;
       const jj = j < PER_HALVA - 1 ? j : RING - 2 - j; // spegla till vänster halva
       let glas = false;
-      if (jj >= RAD_BALTE && jj < RAD_TAKKANT) glas = arSidoruta(xm, sm);
+      if (jj >= RAD_BALTE && jj < RAD_TAKKANT) glas = arSidoruta(xm, sm, (jj - RAD_BALTE + 0.5) / SEG[2]);
       else if (jj >= RAD_TAKKANT + 2 && arVindruta(xm)) glas = true;
       (glas ? idxGlas : idxPlat).push(a, c, b, b, c, d);
     }
@@ -994,6 +1005,9 @@ async function startaViewer() {
   karossGeo.computeVertexNormals();
   const platMat = new THREE.MeshStandardMaterial({ color: 0x9aa3ad, transparent: true, opacity: 0.15, depthWrite: false, roughness: 0.45, metalness: 0.2, side: THREE.DoubleSide });
   const glasMat = new THREE.MeshStandardMaterial({ color: 0x2b3440, transparent: true, opacity: 0.1, depthWrite: false, roughness: 0.1, metalness: 0.4, side: THREE.DoubleSide });
+  const lyktMat = new THREE.MeshStandardMaterial({ color: 0x8fb8e0, emissive: 0x24476b, transparent: true, opacity: 0.5, depthWrite: false, roughness: 0.1, metalness: 0.3, side: THREE.DoubleSide });
+  const bakljusMat = new THREE.MeshStandardMaterial({ color: 0xb3261e, transparent: true, opacity: 0.5, depthWrite: false, roughness: 0.2, side: THREE.DoubleSide });
+  const svartMat = new THREE.MeshStandardMaterial({ color: 0x27272a, transparent: true, opacity: 0.5, depthWrite: false, roughness: 0.7 });
   const kaross = new THREE.Mesh(karossGeo, [platMat, glasMat]);
   kaross.renderOrder = 10;
   const karossGrupp = new THREE.Group();
@@ -1003,37 +1017,91 @@ async function startaViewer() {
   // Linjer: bälte, takkant, dörrar, huv, baklucka, hjulhus
   const linjeMat = new THREE.LineBasicMaterial({ color: 0x6b7280, transparent: true, opacity: 0.6 });
   const punktPa = (x, j) => { const s = sektion(x); return s.ring[j]; };
+  // Punkt på karossen vid x och ett fraktionellt radindex f (höger halva), z speglas med sida -1
+  const ytPunkt = (x, f, sida = 1) => {
+    const r = sektion(x).ring, j0 = Math.min(Math.floor(f), PER_HALVA - 2), k = f - j0;
+    const p = r[j0].map((v, n) => v + (r[j0 + 1][n] - v) * k);
+    return [p[0], p[1], p[2] * sida];
+  };
   const linje = (pts) => karossGrupp.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts.map(V)), linjeMat));
   const langsLinje = (j, x0, x1) => { const p = []; for (let i = 0; i < stationer.length; i++) { const x = stationer[i]; if (x <= x0 && x >= x1) p.push(sektioner[i].ring[j]); } linje(p); };
   for (const sida of [0, 1]) {
     const jr = (j) => (sida === 0 ? j : RING - 1 - j);
     langsLinje(jr(0), FRAM_X, BAK_X);                       // underkant med hjulhus
     langsLinje(jr(RAD_BALTE), FRAM_X - 0.02, BAK_X + 0.01); // bältlinje
-    langsLinje(jr(RAD_TAKKANT), 0.94, -2.10);               // takkant / rutornas överkant
+    langsLinje(jr(RAD_TAKKANT), 0.94, -2.06);               // takkant / rutornas överkant
     langsLinje(jr(RAD_TAKKANT + 1), 2.10, 0.98);            // motorhuvens skarv
-    langsLinje(jr(2), 2.12, -2.30);                         // karaktärslinje
+    langsLinje(jr(RAD_SKULDRA), 2.10, -2.30);               // karaktärslinjen (skulderlinjen)
     for (const x of [0.98, -0.14, -1.18]) {                 // dörrskarvar
       const p = []; for (let j = 0; j <= RAD_TAKKANT; j++) p.push(punktPa(x, jr(j))); linje(p);
     }
     // Rutornas stolpar
     for (const [a, b] of PELARE) for (const x of [a, b]) { const p = []; for (let j = RAD_BALTE; j <= RAD_TAKKANT; j++) p.push(punktPa(x, jr(j))); linje(p); }
+    // D-stolpen med Hofmeister-knicken, interpolerad mellan ringens rader
+    const d = [];
+    for (let t = 0; t <= 1.001; t += 0.1) d.push(ytPunkt(lerpTab(RUTA_BAK, t), RAD_BALTE + t * SEG[2], sida === 0 ? 1 : -1));
+    linje(d);
   }
-  for (const x of [0.94, 0.27, -1.99, -2.24, 2.10]) { // vindruta, bakruta, huvens framkant
+  for (const x of [0.94, 0.27, -2.01, -2.20, 2.10]) { // vindruta, bakruta, huvens framkant
     const p = []; for (let j = RAD_TAKKANT; j <= RING - 1 - RAD_TAKKANT; j++) p.push(punktPa(x, j)); linje(p);
   }
-  // Takreling (E91) och backspeglar
+  // Takreling (E91) med fötter, backspeglar, dörrhandtag och svarta trösklar
   for (const s of [-1, 1]) {
-    const p = []; for (let x = 0.05; x >= -1.92; x -= 0.15) { const r = sektion(x).ring[s < 0 ? RAD_TAKKANT + 2 : RING - 3 - RAD_TAKKANT]; p.push([r[0], r[1] + 0.03, r[2] * 0.97]); }
+    const p = [];
+    for (let x = 0.05; x >= -1.93; x -= 0.15) { const r = sektion(x).ring[s < 0 ? RAD_TAKKANT + 2 : RING - 3 - RAD_TAKKANT]; p.push([r[0], r[1] + (x > 0 || x < -1.85 ? 0.01 : 0.04), r[2] * 0.97]); }
     const rel = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(p.map(V)), 30, 0.012, 6), platMat);
     karossGrupp.add(rel);
-    const spegel = new THREE.Mesh(new RoundedBoxGeometry(0.12, 0.10, 0.16, 2, 0.03), platMat);
-    spegel.position.set(0.86, 0.99, s * 0.99);
+    const spegel = new THREE.Mesh(new RoundedBoxGeometry(0.10, 0.09, 0.17, 2, 0.03), platMat);
+    spegel.position.set(0.82, 1.0, s * 0.99);
     karossGrupp.add(spegel);
+    for (const x of [0.06, -0.98]) {
+      const h = new THREE.Mesh(new RoundedBoxGeometry(0.15, 0.03, 0.03, 2, 0.012), svartMat);
+      h.position.set(x, lerpTab(SKULDRA, x) - 0.03, s * 0.905);
+      karossGrupp.add(h);
+    }
+    const troskel = new THREE.Mesh(new RoundedBoxGeometry(1.96, 0.08, 0.05, 2, 0.02), svartMat);
+    troskel.position.set(0, 0.25, s * 0.875);
+    karossGrupp.add(troskel);
   }
-  // Njurgrill
+  // Lyktor som tunna lappar på karossytan (x, radindex f0..f1), med kontur: smala strålkastare som
+  // drar bakåt in i skärmen, baklyktan delad mellan karossen (hörnet) och bakluckan
+  function lapp(x0, x1, f0, f1, mat) {
+    const NX = 10, NF = 3, pts = [], ix = [], kant = [[], [], [], []];
+    for (const sida of [1, -1]) {
+      const bas = pts.length / 3;
+      for (let a = 0; a <= NX; a++) {
+        const x = x0 + (x1 - x0) * a / NX;
+        for (let b = 0; b <= NF; b++) {
+          const p = ytPunkt(x, f0(x) + (f1(x) - f0(x)) * b / NF, sida);
+          pts.push(p[0], p[1], p[2] * 1.004);
+          if (sida === 1) { if (b === 0) kant[0].push(p); if (b === NF) kant[1].push(p); if (a === 0) kant[2].push(p); if (a === NX) kant[3].push(p); }
+          if (a < NX && b < NF) { const i = bas + a * (NF + 1) + b; ix.push(i, i + NF + 1, i + 1, i + 1, i + NF + 1, i + NF + 2); }
+        }
+      }
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+    g.setIndex(ix); g.computeVertexNormals();
+    const m = new THREE.Mesh(g, mat);
+    m.renderOrder = 11; // ritas efter plåten så att den inte bleker lyktan
+    karossGrupp.add(m);
+    for (const sida of [1, -1]) for (const k of kant) linje(k.map((p) => [p[0], p[1], p[2] * sida]));
+  }
+  lapp(1.86, 2.165, (x) => 3.8 + Math.max(0, 1.97 - x) * 12, (x) => 5.8 + Math.max(0, x - 2.06) * 22, lyktMat);
+  lapp(-2.31, -2.12, () => 3.7, (x) => 6 + Math.max(0, -2.27 - x) * 40, bakljusMat);
   for (const s of [-1, 1]) {
-    const n = new THREE.Mesh(new RoundedBoxGeometry(0.04, 0.12, 0.16, 2, 0.03), glasMat);
-    n.position.set(2.17, 0.66, s * 0.10);
+    const l = new THREE.Mesh(new RoundedBoxGeometry(0.012, 0.085, 0.30, 2, 0.005), bakljusMat);
+    l.position.set(-2.322, 0.935, s * 0.45); l.rotation.z = -0.15; l.renderOrder = 11;
+    karossGrupp.add(l);
+  }
+  // Takspoiler över bakrutan
+  const spoiler = new THREE.Mesh(new RoundedBoxGeometry(0.18, 0.03, 1.20, 2, 0.012), platMat);
+  spoiler.position.set(-2.04, 1.36, 0); spoiler.rotation.z = 0.12;
+  karossGrupp.add(spoiler);
+  // Njurgrill: två njurar i nosen, lutade bakåt upptill
+  for (const s of [-1, 1]) {
+    const n = new THREE.Mesh(new RoundedBoxGeometry(0.04, 0.13, 0.17, 2, 0.03), svartMat);
+    n.position.set(2.155, 0.68, s * 0.105); n.rotation.z = 0.35;
     karossGrupp.add(n);
   }
 
@@ -1234,6 +1302,8 @@ async function startaViewer() {
     platMat.opacity = v; platMat.transparent = !fast; platMat.depthWrite = fast;
     glasMat.opacity = Math.min(0.55, 0.1 + v * 0.45);
     inredMat.opacity = Math.min(0.35, v * 2);
+    lyktMat.opacity = bakljusMat.opacity = Math.min(0.6, 0.15 + v * 0.5);
+    svartMat.opacity = Math.min(0.7, v * 1.5);
     linjeMat.opacity = Math.min(0.75, 0.25 + v);
     platMat.needsUpdate = true;
   }
