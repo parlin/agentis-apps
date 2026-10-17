@@ -69,6 +69,14 @@
     position: absolute; left: 8px; bottom: 8px; font-size: 11px; color: var(--muted-foreground);
     background: color-mix(in oklab, var(--background) 80%, transparent); padding: 2px 6px; border-radius: 4px; pointer-events: none;
   }
+  #fot { position: absolute; left: 8px; right: 8px; bottom: 8px; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; pointer-events: none; }
+  #fot > * { position: static; max-width: 100%; }
+  #kredit { font-size: 11px; color: var(--muted-foreground); margin: 0; pointer-events: auto;
+    background: color-mix(in oklab, var(--background) 85%, transparent); padding: 2px 6px; border-radius: 4px; }
+  #kredit a { color: inherit; text-decoration: underline; }
+  #kredit[hidden] { display: none; }
+  #kaross-val { flex: none; max-width: 10.5em; height: 32px; font-size: 13px; padding-top: 0; padding-bottom: 0; }
+  #dack-info .alt-not { border-left: 3px solid var(--varning); padding-left: 8px; }
   #toast {
     position: absolute; left: 50%; top: 10px; transform: translateX(-50%);
     background: var(--foreground); color: var(--background); padding: 6px 12px; border-radius: 6px;
@@ -139,7 +147,8 @@
     header.top { flex-direction: row; align-items: center; justify-content: space-between; gap: 16px; }
     header.top .titel { flex: none; }
     .verktyg { flex: 1; align-items: flex-end; }
-    .plat { width: min(100%, 420px); }
+    .plat { width: min(100%, 520px); }
+    #kaross-val { max-width: none; }
   }
   @media (min-width: 1024px) { aside.panel { width: 360px; } }
 </style>
@@ -167,8 +176,9 @@
       <button type="button" class="btn" data-size="sm" data-variant="secondary" id="btn-rotera" aria-pressed="false">Rotation: av</button>
     </div>
     <div class="plat">
-      <label for="opacitet">Kaross</label>
-      <input type="range" id="opacitet" min="0" max="100" step="1" value="15" aria-describedby="opacitet-varde">
+      <label for="kaross-val">Kaross</label>
+      <select class="select" id="kaross-val" title="Välj kaross. Hjulen och delarna är desamma."></select>
+      <input type="range" id="opacitet" min="0" max="100" step="1" value="15" aria-label="Karossens opacitet" aria-describedby="opacitet-varde">
       <output id="opacitet-varde" for="opacitet">15 %</output>
     </div>
   </div>
@@ -180,7 +190,10 @@
     <div id="fallback" role="status">
       <p>Din webbläsare kan tyvärr inte visa 3D-modellen (WebGL saknas). Delistan fungerar ändå, med beskrivning och referens för varje del.</p>
     </div>
-    <div id="note">Positionerna är ungefärliga. Schematisk modell.</div>
+    <div id="fot">
+      <div id="note">Positionerna är ungefärliga. Schematisk modell.</div>
+      <p id="kredit" hidden></p>
+    </div>
     <div id="toast" role="status" aria-live="polite"></div>
     <div id="tooltip" aria-hidden="true"></div>
   </div>
@@ -207,6 +220,7 @@
 
 <script type="module">
 import { byggKaross, KAROSS_MATT } from './kaross.js';
+import { ALT_KAROSSER, laddaAltKaross, altOpacitet, kreditNoder } from './alt-kaross.js';
 // ============================================================
 // DELAR - lägg till fler här.
 // Koordinater i meter: x = längs bilen (+ fram), y = höjd över marken, z = sidled (+ höger, - vänster/förarsidan).
@@ -675,6 +689,14 @@ const plus = (v, dec = 0) => (v > 0 ? '+' : v < 0 ? '−' : '±') + Math.abs(v).
 const STANDARD_HASH = 'grupp=ac'; // visas när sidan öppnas utan hash
 
 // ============================================================
+// KAROSSER - den egna (kaross.js) är standard och skrivs inte i hashen. Alternativa karosser
+// (färdiga CC BY-modeller) finns i alt-kaross.js; här listas bara de vars fil ligger i modeller/.
+// ============================================================
+const KAROSSER = ALT_KAROSSER.filter((a) => a.finns);
+const karossById = new Map(KAROSSER.map((a) => [a.id, a]));
+let valdKaross = null; // null = den egna, annars posten ur KAROSSER
+
+// ============================================================
 // Tillstånd och UI (fungerar även utan WebGL)
 // ============================================================
 const delById = new Map(DELAR.map((d) => [d.id, d]));
@@ -797,6 +819,7 @@ function byggDack() {
     t.modell || t.falgNamn ? el('p', { text: [t.modell, t.falgNamn && `fälg ${t.falgNamn}`].filter(Boolean).join(', ') }) : null,
     t.tarI ? el('p', { class: 'tar-i', text: t.tarI }) : null,
     t.not ? el('p', { text: t.not }) : null,
+    valdKaross ? el('p', { class: 'alt-not', text: 'Luft-talen gäller mätningarna på den egna E91:an, inte den alternativa karossen som visas. Mätlinjerna är dolda så länge den är vald.' }) : null,
     dl,
     el('p', { class: 'kalla', text: 'Beräknat, inte uppmätt. Luften är statisk spalt mellan däckets topp och skärmkanten, med 10-15 mm intryckning och lastat bagage som vid mätningen (fram 670, bak 665 mm med dagens däck). Skärmkanten i sidled är uppskattad till 105-115 mm från navytan. Under 15 mm är trångt. Underlag: dokument 31 del 13, 16-17 och 22.' }),
     el('button', { type: 'button', class: 'btn', 'data-size': 'sm', 'data-variant': 'outline', id: 'btn-framhjul', text: 'Visa framhjulet från sidan' }),
@@ -814,6 +837,27 @@ dackEl.addEventListener('click', (e) => {
   if (b) return valjDack(b.dataset.dack);
   if (e.target.closest('#btn-framhjul') && viewer) viewer.visaFramhjul();
 });
+
+// ---------- Kaross ----------
+const karossValEl = document.getElementById('kaross-val');
+const kreditEl = document.getElementById('kredit');
+karossValEl.append(new Option('Egen E91 (standard)', ''));
+for (const a of KAROSSER) karossValEl.append(new Option(`${a.namn} (${a.upphovsperson}, CC BY)`, a.id));
+function visaKredit(a) {
+  kreditEl.hidden = !a;
+  if (a) kreditEl.replaceChildren(...kreditNoder(a)); else kreditEl.replaceChildren();
+}
+function valjKaross(id, { skrivHash = true } = {}) {
+  const ny = karossById.get(id) || null;
+  if (ny === valdKaross) return;
+  valdKaross = ny;
+  karossValEl.value = ny ? ny.id : '';
+  if (skrivHash) skrivUrl();
+  byggDack();
+  visaKredit(null);
+  if (viewer) viewer.kaross(valdKaross);
+}
+karossValEl.addEventListener('change', () => valjKaross(karossValEl.value));
 
 function tillampa(fokus = true) {
   byggLista();
@@ -833,7 +877,7 @@ function valjGrupp(gid, opts = {}) {
   valjDelar(DELAR.filter((d) => d.grupp === gid).map((d) => d.id), { ...opts, grupp: gid });
 }
 
-const dackParam = () => (valtDack !== DACK[0].id ? `dack=${valtDack}` : '');
+const dackParam = () => [valdKaross ? `kaross=${valdKaross.id}` : '', valtDack !== DACK[0].id ? `dack=${valtDack}` : ''].filter(Boolean).join('&');
 function skrivUrl() {
   const delar = valdGrupp ? `grupp=${valdGrupp}` : (valda.length ? `del=${valda.join(',')}` : '');
   const h = [dackParam(), delar].filter(Boolean).join('&');
@@ -844,6 +888,7 @@ function lasHash() {
   const h = decodeURIComponent(location.hash.replace(/^#/, '')) || STANDARD_HASH;
   const p = new URLSearchParams(h);
   if (p.get('dack')) dackEl.open = true;
+  valjKaross((p.get('kaross') || '').trim(), { skrivHash: false });
   valjDack((p.get('dack') || '').trim(), { skrivHash: false });
   if (p.get('del')) valjDelar(p.get('del').split(',').map((s) => s.trim()), { skrivHash: false });
   else if (p.get('grupp')) valjGrupp(p.get('grupp').trim(), { skrivHash: false });
@@ -934,7 +979,7 @@ function visaFallback(orsak) {
   console.warn('3D-vyn kunde inte startas:', orsak);
   document.getElementById('fallback').classList.add('show');
   document.getElementById('note').style.display = 'none';
-  document.querySelectorAll('[data-vy], #btn-reset, #btn-rontgen, #btn-rotera, #opacitet').forEach((b) => { b.disabled = true; });
+  document.querySelectorAll('[data-vy], #btn-reset, #btn-rontgen, #btn-rotera, #opacitet, #kaross-val').forEach((b) => { b.disabled = true; });
 }
 
 if (!harWebGL()) {
@@ -944,6 +989,7 @@ if (!harWebGL()) {
     viewer = await startaViewer();
     viewer.opacitet(+slider.value / 100);
     viewer.dack(dackById.get(valtDack));
+    if (valdKaross) viewer.kaross(valdKaross);
     viewer.markera(valda, true, true);
   } catch (err) {
     viewer = null;
@@ -1042,6 +1088,9 @@ async function startaViewer() {
 
   const karossGrupp = byggKaross(THREE);
   kropp.add(karossGrupp);
+  // Den egna karossens ytor (lack, glas, lister, lyktor, detaljer). Inredningen som läggs till nedan
+  // hör inte hit och visas även med en alternativ kaross.
+  const egnaYtor = [...karossGrupp.children];
 
   // ---------- Hjul: däck och fälg efter valt däck (DACK), byts i satDack() ----------
   // Ritad radie = nominell diameter + dagens uppmätta merdiameter, så att spalten i modellen stämmer med dackTal().
@@ -1291,9 +1340,39 @@ async function startaViewer() {
     }
     if (fokus && nagot) fokusera([...markerade], direkt);
   }
+  let opacitetV = 1;
   function opacitet(v) {
+    opacitetV = v;
     karossGrupp.userData.opacitet(v);
     inredMat.opacity = Math.min(0.35, v * 2);
+    if (altKaross) altOpacitet(altKaross, v);
+  }
+
+  // ---------- Alternativ kaross ----------
+  // Laddas först när den väljs. Läggs i kropp så att den höjs och sänks med valt däck, med modellens
+  // hjulcentrum på navets höjd. Modellens egna hjul döljs: verktygets hjul (däckväljaren) gäller alltid.
+  // Den egna karossens ytor göms under tiden. Mätlinjerna är kalibrerade mot den egna karossen och göms.
+  const altCache = new Map();
+  let altKaross = null, altNr = 0;
+  async function satKaross(a) {
+    const nr = ++altNr;
+    if (altKaross) kropp.remove(altKaross.grupp);
+    altKaross = null;
+    if (!a) { egnaYtor.forEach((o) => { o.visible = true; }); luftMatt.forEach((lm) => { lm.linje.visible = lm.etikett.visible = true; }); return true; }
+    let res = altCache.get(a.id);
+    if (!res) {
+      toast(`Laddar ${a.namn.toLowerCase()} ...`);
+      res = await laddaAltKaross(THREE, a, { navY: HJUL_Y0, doljHjul: true });
+      altCache.set(a.id, res);
+    }
+    if (nr !== altNr) return false;
+    egnaYtor.forEach((o) => { o.visible = false; });
+    luftMatt.forEach((lm) => { lm.linje.visible = lm.etikett.visible = false; });
+    altKaross = res;
+    res.tema(karossGrupp.userData.material.lack.color);
+    altOpacitet(res, opacitetV);
+    kropp.add(res.grupp);
+    return true;
   }
 
   // ---------- Klick / tapp ----------
@@ -1351,6 +1430,7 @@ async function startaViewer() {
   function tema() {
     const d = morkt();
     karossGrupp.userData.tema(d);
+    for (const r of altCache.values()) r.tema(karossGrupp.userData.material.lack.color);
     markText.forEach((f) => f());
   }
   tema();
@@ -1385,7 +1465,12 @@ async function startaViewer() {
     labelRenderer.render(scene, camera);
   });
 
-  return { markera, opacitet, hovra, dack: satDack, visaFramhjul };
+  const kaross = (a) => satKaross(a).then((ok) => { if (ok && a === valdKaross) visaKredit(a); }, (err) => {
+    console.warn('[alt-kaross] kunde inte ladda', a.fil, err && err.message ? err.message : err);
+    toast('Kunde inte ladda karossen. Visar den egna.');
+    valjKaross('');
+  });
+  return { markera, opacitet, hovra, dack: satDack, visaFramhjul, kaross };
 }
 </script>
 </body>

@@ -62,6 +62,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { byggKaross, KAROSS_MATT } from './kaross.js';
+import { ALT_KAROSSER, laddaAltKaross, altOpacitet, kreditNoder } from './alt-kaross.js';
 
 const q = new URLSearchParams(location.search);
 if (q.get('tema')) document.documentElement.dataset.theme = q.get('tema') === 'mork' ? 'dark' : 'light';
@@ -115,145 +116,22 @@ document.getElementById('info').textContent = `${kaross.userData.trianglar} tria
 console.log('kaross', kaross.userData.trianglar, 'trianglar', ms, 'ms');
 
 // ============================================================
-// Alternativa karosser: färdiga modeller (glTF Binary) som läggs för hand i modeller/.
-// Filerna laddas först när de väljs, så att sidan inte gör några misslyckade anrop i onödan.
-// del: vilken del av modellen som används, andring: vad som ändrats (krävs för CC BY-krediten).
-// nod: namnet på den nod (bil) som ska användas när filen innehåller flera bilar. Lämna tomt
-// tills filen finns; nodnamnen på toppnivå loggas när filen laddas. ?nod=<namn> provar ett namn
-// utan att ändra här.
+// Alternativa karosser: listan, laddningen, normaliseringen och omfärgningen av lacken finns i
+// alt-kaross.js, som delas med delkartan (index.html). Testsidan listar alla poster, även de vars
+// fil inte lagts i modeller/ än.
 // ============================================================
-const CC_BY = 'https://creativecommons.org/licenses/by/4.0/';
-const ALT_KAROSSER = [
-  { id: 'comrade-wagon', namn: 'Generisk kombi', modell: 'Generic passenger car pack', del: ' (kombin)', fil: 'modeller/comrade-wagon.glb',
-    upphovsperson: 'Comrade1280', licens: 'CC BY 4.0', licensLank: CC_BY, nod: '', andring: 'bara kombin utplockad och skalad',
-    lank: 'https://sketchfab.com/3d-models/generic-passenger-car-pack-20f9af9b8a404d5cb022ac6fe87f21f5' },
-  { id: 'han66st-wagon', namn: 'Lowpoly-kombi', modell: 'Lowpoly Sedan & Wagon', fil: 'modeller/han66st-wagon.glb',
-    upphovsperson: 'Han66st', licens: 'CC BY 4.0', licensLank: CC_BY, nod: '',
-    lank: 'https://sketchfab.com/3d-models/lowpoly-sedan-wagon-e11a46478c674b279fe9d299b2125c30' },
-  { id: 'passat-anserkon', namn: 'Passat-kombi', modell: 'Generic USA/EU Station wagon', fil: 'modeller/passat-anserkon.glb',
-    upphovsperson: 'Anserkon', licens: 'CC BY 4.0', licensLank: CC_BY, nod: '',
-    lank: 'https://sketchfab.com/3d-models/generic-usaeu-station-wagon-c14f271c9d414b8e8d25e7cec3bb44f5' },
-];
-const LANGD = KAROSS_MATT.framX - KAROSS_MATT.bakX; // 4,52
-const HJULBAS = KAROSS_MATT.axlar[0] - KAROSS_MATT.axlar[1]; // 2,76
-const ARHJUL = /wheel|tire|tyre|rim|hjul|d[aä]ck|f[aä]lg|reifen|felge/i;
-const ARGLAS = /glass|glas|window|windshield|windscreen|optics|lamp|light|lykt|head|tail|indicator|blinker|lens/i;
-
 const valEl = document.getElementById('karossval'), meddelandeEl = document.getElementById('meddelande');
 const kreditEl = document.getElementById('kredit'), vandEl = document.getElementById('vand');
 valEl.append(new Option('Egen E91', 'egen'));
 for (const a of ALT_KAROSSER) valEl.append(new Option(`${a.namn} (CC BY, ${a.upphovsperson})`, a.id));
 const altGrupp = new THREE.Group(); altGrupp.name = 'alt-kaross'; scene.add(altGrupp);
-const altCache = new Map(); // id -> { grupp, material: [{ m, bas, glas }] }
+const altCache = new Map(); // id -> { grupp, material, tema }
 let altValt = null, laddar = 0;
-
-function altOpacitet(v) {
-  if (!altValt) return;
-  for (const { m, bas, glas } of altValt.material) {
-    if (glas) { m.transparent = true; m.depthWrite = false; m.opacity = Math.min(bas, 0.15 + 0.6 * v); }
-    else { const fast = v >= 0.999; m.transparent = !fast; m.depthWrite = fast; m.opacity = bas * v; }
-    m.needsUpdate = true;
-  }
-  altGrupp.visible = v > 0.001;
-}
 
 function visaMeddelande(nod) { meddelandeEl.replaceChildren(...[].concat(nod || [])); meddelandeEl.hidden = !nod; }
 function visaKredit(a) {
   kreditEl.hidden = !a;
-  if (!a) return;
-  const l = (href, text) => Object.assign(document.createElement('a'), { href, text, target: '_blank', rel: 'noopener' });
-  kreditEl.replaceChildren(`"${a.modell}"${a.del || ''} av ${a.upphovsperson}, `, l(a.licensLank, a.licens), ', ', l(a.lank, a.lank), `, modifierad: ${a.andring || 'skalad'}.`);
-}
-
-// Normalisering: längden längs x, framaxeln åt +x, hjulen över axlarna, står på marken
-function normalisera(a, rot) {
-  const namn = (o) => o.name || '(namnlös)';
-  // Toppnivån: gå igenom omslagsnoder med ett enda barn (Sketchfab_model, root, ...)
-  let topp = rot; const kedja = [];
-  while (topp.children.length === 1 && !topp.children[0].isMesh) { topp = topp.children[0]; kedja.push(namn(topp)); }
-  console.log(`[alt-kaross] ${a.id}: noder på toppnivå (under ${kedja.join(' / ') || 'scenen'}):`, topp.children.map(namn));
-  const nodNamn = q.get('nod') || a.nod;
-  let modell = rot;
-  if (nodNamn) {
-    let hit = rot.getObjectByName(nodNamn);
-    if (!hit) rot.traverse((o) => { if (!hit && o.name && o.name.toLowerCase().includes(nodNamn.toLowerCase())) hit = o; });
-    if (hit) { modell = hit; console.log(`[alt-kaross] använder noden "${namn(hit)}"`); }
-    else console.warn(`[alt-kaross] noden "${nodNamn}" finns inte, använder hela filen`);
-  } else if (topp.children.filter((o) => !ARHJUL.test(o.name)).length > 1) {
-    console.log('[alt-kaross] flera noder på toppnivå. Sätt fältet nod i ALT_KAROSSER (eller ?nod=) om filen innehåller flera bilar.');
-  }
-  rot.updateMatrixWorld(true);
-  // Bygg om till en platt grupp med geometrin i världskoordinater (enklare att normalisera)
-  const ut = new THREE.Group(), material = [], hjulMesher = [];
-  modell.traverse((o) => {
-    if (!o.isMesh) return;
-    const g = o.geometry.clone(); g.applyMatrix4(o.matrixWorld);
-    const mats = (Array.isArray(o.material) ? o.material : [o.material]).map((m0) => {
-      const m = m0.clone(); m.side = THREE.DoubleSide;
-      const glas = ARGLAS.test(`${o.name} ${m0.name}`) || (m0.transparent && m0.opacity < 0.99) || m0.transmission > 0;
-      material.push({ m, bas: m0.transparent ? m0.opacity : 1, glas });
-      return m;
-    });
-    const mesh = new THREE.Mesh(g, Array.isArray(o.material) ? mats : mats[0]);
-    mesh.name = o.name;
-    ut.add(mesh);
-    if (ARHJUL.test(`${o.name} ${o.parent && o.parent.name}`)) hjulMesher.push(mesh);
-  });
-  // Längden ska ligga längs x: huvudriktningen i planvy (PCA) ur hjulens centrum, annars ur alla punkter.
-  // Bilar i paket står ofta snett och utanför origo.
-  const plan = [];
-  if (hjulMesher.length >= 4) for (const m of hjulMesher) { const c = new THREE.Box3().setFromObject(m).getCenter(new THREE.Vector3()); plan.push([c.x, c.z]); }
-  else {
-    // utan hjulnamn: de lägsta 12 % av höjden (däcken), annars alla punkter
-    const b0 = new THREE.Box3().setFromObject(ut), grans = b0.min.y + 0.12 * (b0.max.y - b0.min.y);
-    for (const lag of [true, false]) {
-      for (const m of ut.children) { const p = m.geometry.attributes.position; for (let i = 0; i < p.count; i++) if (!lag || p.getY(i) < grans) plan.push([p.getX(i), p.getZ(i)]); }
-      if (plan.length >= 8) break;
-    }
-  }
-  const mx = plan.reduce((t, p) => t + p[0], 0) / plan.length, mz = plan.reduce((t, p) => t + p[1], 0) / plan.length;
-  let cxx = 0, czz = 0, cxz = 0;
-  for (const [x, z] of plan) { cxx += (x - mx) ** 2; czz += (z - mz) ** 2; cxz += (x - mx) * (z - mz); }
-  const vinkel = 0.5 * Math.atan2(2 * cxz, cxx - czz);
-  for (const m of ut.children) { m.geometry.translate(-mx, 0, -mz); m.geometry.rotateY(vinkel); }
-  let box = new THREE.Box3().setFromObject(ut), size = box.getSize(new THREE.Vector3());
-  // Fronten: antas vara änden med kortast överhäng (som på E91:an); knappen Vänd rättar om det blev fel
-  // Hjulens centrum i längsled: ur namngivna mesher, annars ur geometrin (de lägsta 12 % av höjden är nästan bara däck)
-  const mitt = (box.min.x + box.max.x) / 2;
-  let fram = [], bak = [], kalla;
-  if (hjulMesher.length) {
-    kalla = `${hjulMesher.length} mesher med hjulnamn (${[...new Set(hjulMesher.map((m) => m.name))].slice(0, 8).join(', ')})`;
-    for (const m of hjulMesher) { const c = new THREE.Box3().setFromObject(m).getCenter(new THREE.Vector3()); (c.x > mitt ? fram : bak).push(c.x); }
-  }
-  if (!fram.length || !bak.length) {
-    fram = []; bak = [];
-    const grans = box.min.y + 0.12 * size.y, v = new THREE.Vector3();
-    for (const m of ut.children) {
-      const p = m.geometry.attributes.position;
-      for (let i = 0; i < p.count; i++) { v.fromBufferAttribute(p, i); if (v.y < grans) (v.x > mitt ? fram : bak).push(v.x); }
-    }
-    kalla = `geometrin (${fram.length + bak.length} punkter i de lägsta 12 % av höjden)`;
-  }
-  const medel = (l) => l.reduce((s, x) => s + x, 0) / l.length;
-  if (!fram.length || !bak.length) { fram = [box.max.x - 0.167 * size.x]; bak = [box.min.x + 0.222 * size.x]; kalla = 'inga hjul hittade, E91:ans överhäng antas'; }
-  let xf = medel(fram), xb = medel(bak);
-  if (box.max.x - xf > xb - box.min.x) {
-    for (const m of ut.children) m.geometry.rotateY(Math.PI);
-    [xf, xb] = [-xb, -xf]; box = new THREE.Box3().setFromObject(ut);
-  }
-  console.log(`[alt-kaross] ${a.id}: vriden ${(vinkel * 180 / Math.PI).toFixed(1)} grader så att längden ligger längs x (ur ${plan.length} punkter)`);
-  // Uniform skala till E91:ans längd, sedan extra skala längs x så att hjulbasen blir exakt 2,76
-  const s = LANGD / size.x, kx = HJULBAS / ((xf - xb) * s);
-  const axelMitt = (xf + xb) / 2, zMitt = (box.min.z + box.max.z) / 2;
-  for (const m of ut.children) {
-    m.geometry.translate(-axelMitt, -box.min.y, -zMitt);
-    m.geometry.scale(s * kx, s, s);
-    m.geometry.computeBoundingBox(); m.geometry.computeBoundingSphere();
-  }
-  box = new THREE.Box3().setFromObject(ut); size = box.getSize(new THREE.Vector3());
-  console.log(`[alt-kaross] ${a.id}: hjulen ur ${kalla}. Hjulbas i filen ${((xf - xb)).toFixed(3)} (enheter), skala ${s.toFixed(4)}, extra längs x ${kx.toFixed(3)}. ` +
-    `Resultat: längd ${size.x.toFixed(3)} m, bredd ${size.z.toFixed(3)} m, höjd ${size.y.toFixed(3)} m, axlar x = +-${(HJULBAS / 2).toFixed(2)}.`);
-  return { grupp: ut, material, kx };
+  if (a) kreditEl.replaceChildren(...kreditNoder(a));
 }
 
 async function valjKaross(id) {
@@ -266,10 +144,8 @@ async function valjKaross(id) {
   let res = altCache.get(id);
   if (!res) {
     visaMeddelande(`Laddar ${a.fil} ...`);
-    const { GLTFLoader } = await import('three/addons/loaders/GLTFLoader.js');
     try {
-      const gltf = await new GLTFLoader().loadAsync(a.fil);
-      res = normalisera(a, gltf.scene);
+      res = await laddaAltKaross(THREE, a, { nod: q.get('nod'), navY: KAROSS_MATT.navY });
       altCache.set(id, res);
     } catch (err) {
       if (nr !== laddar) return;
@@ -282,17 +158,18 @@ async function valjKaross(id) {
   if (nr !== laddar) return;
   visaMeddelande(null);
   altValt = res; altGrupp.add(res.grupp); vandEl.hidden = false;
-  altOpacitet(+op.value / 100);
+  res.tema(kaross.userData.material.lack.color);
+  altOpacitet(res, +op.value / 100);
 }
 valEl.addEventListener('change', () => valjKaross(valEl.value));
 vandEl.addEventListener('click', () => { altGrupp.rotation.y = altGrupp.rotation.y ? 0 : Math.PI; });
 if (q.get('kaross')) queueMicrotask(() => { valEl.value = q.get('kaross'); valjKaross(valEl.value); });
 
 const op = document.getElementById('op'), opv = document.getElementById('opv');
-const satOp = (v) => { op.value = v; opv.textContent = `${v} %`; if (!altValt && valEl.value === 'egen') kaross.userData.opacitet(v / 100); altOpacitet(v / 100); };
+const satOp = (v) => { op.value = v; opv.textContent = `${v} %`; if (!altValt && valEl.value === 'egen') kaross.userData.opacitet(v / 100); if (altValt) altOpacitet(altValt, v / 100); };
 op.addEventListener('input', () => satOp(+op.value));
 satOp(+(q.get('op') || 100));
-const tema = () => kaross.userData.tema(mork());
+const tema = () => { kaross.userData.tema(mork()); for (const r of altCache.values()) r.tema(kaross.userData.material.lack.color); };
 tema();
 document.getElementById('tema').addEventListener('click', () => { document.documentElement.dataset.theme = mork() ? 'light' : 'dark'; tema(); });
 
