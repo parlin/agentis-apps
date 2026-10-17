@@ -200,12 +200,13 @@
       <label class="sr-only" for="sok">Sök del</label>
       <input class="input" type="search" id="sok" placeholder="Sök del, grupp eller ref (t.ex. B28)" autocomplete="off">
       <nav id="parts-list" aria-label="Delar grupperade"></nav>
-      <p class="disclaimer">Positionerna är ungefärliga. Schematisk modell. Karossen är byggd för hand efter E91:s mått (längd 4 520, bredd 1 817, höjd 1 418, hjulbas 2 760 mm), inte skannad. Delar märkta "ca" har en position eller form som inte gått att belägga. Vänster = förarsidan, sett från förarplatsen.</p>
+      <p class="disclaimer">Positionerna är ungefärliga. Schematisk modell. Karossen är modellerad för hand som subdivision-yta efter E91:s mått (längd 4 520, bredd 1 817, höjd 1 418, hjulbas 2 760 mm), inte skannad. Hjulhusen är cirkelbågar runt navet, kalibrerade mot uppmätta 670/665 mm. Delar märkta "ca" har en position eller form som inte gått att belägga. Vänster = förarsidan, sett från förarplatsen.</p>
     </div>
   </aside>
 </main>
 
 <script type="module">
+import { byggKaross, KAROSS_MATT } from './kaross.js';
 // ============================================================
 // DELAR - lägg till fler här.
 // Koordinater i meter: x = längs bilen (+ fram), y = höjd över marken, z = sidled (+ höger, - vänster/förarsidan).
@@ -223,7 +224,7 @@
 // ============================================================
 const RAMAR = {
   // Vevaxelns centrum. N52 lutar ca 30 grader åt höger (avgassidan), insuget på vänster sida.
-  motor: { pos: [1.38, 0.38, 0.03], rot: [Math.PI / 6, 0, 0] },
+  motor: { pos: [1.38, 0.355, 0.03], rot: [Math.PI / 6, 0, 0] }, // y sänkt 25 mm så att ventilkåpan ligger under den nya karossens huv
 };
 
 const GRUPPER = [
@@ -295,12 +296,12 @@ const DELAR = [
 
   // ---------------- Kylning ----------------
   { id: 'kylare', namn: 'Kylare med fläkt', grupp: 'kylning', ref: '', beskrivning: 'Längst fram, direkt bakom AC-kondensorn. Den elektriska fläkten sitter på baksidan.',
-    source: K_ETK + ' (17 11 Kylare, 17 42 Fläkt).', pos: [1.99, 0.56, 0], former: [
+    source: K_ETK + ' (17 11 Kylare, 17 42 Fläkt).', pos: [1.93, 0.53, 0], former: [
       { form: 'box', pos: [0, 0, 0], storlek: [0.032, 0.42, 0.64] },
       { form: 'cylinder', pos: [-0.07, 0, 0], storlek: [0.19, 0.08], axel: 'x' },
     ] },
   { id: 'expansionskarl', namn: 'Expansionskärl (kylvätskebehållare)', grupp: 'kylning', ref: '61 B2', beskrivning: 'Kylvätskebehållaren i främre högra delen av motorrummet, vid kylarens högra sida.',
-    source: K_ETK + ' (17 13 Expansionskärl). Läge ej uppmätt.', approx: true, pos: [1.90, 0.76, 0.42], form: 'rbox', storlek: [0.12, 0.17, 0.15] },
+    source: K_ETK + ' (17 13 Expansionskärl). Läge ej uppmätt.', approx: true, pos: [1.84, 0.66, 0.42], form: 'rbox', storlek: [0.12, 0.17, 0.15] },
   { id: 'tvillingslangar', namn: 'Tvillingslangarna under kylvätskebehållaren', grupp: 'kylning', ref: '61 2026-10-12', beskrivning: 'De två slangarna under behållaren som svettas. Hålls under uppsikt.',
     source: 'Egen iakttagelse 2026-10-12. Slangarnas dragning förenklad.', approx: true, form: 'tube', radie: 0.014,
     banor: [[[1.92, 0.67, 0.45], [1.85, 0.56, 0.42], [1.72, 0.50, 0.32]], [[1.88, 0.67, 0.39], [1.82, 0.58, 0.36], [1.70, 0.54, 0.26]]] },
@@ -329,7 +330,7 @@ const DELAR = [
     source: K_ETK + ' (64 50 Köldmedieledningar). Dragning förenklad.', approx: true, form: 'tube', radie: 0.011,
     banor: [[[1.58, 0.54, -0.23], [1.72, 0.57, -0.30], [1.90, 0.55, -0.34], [2.02, 0.62, -0.31]]] },
   { id: 'ac-kondensor', namn: 'AC-kondensor', grupp: 'ac', ref: '', beskrivning: 'Tunn platta framför kylaren. Steg 2: kyler gasen så att den blir vätska.',
-    source: K_ETK + ' (64 53 Kondensor). Placering framför kylaren är belagd, mått uppskattade.', pos: [2.035, 0.55, 0], form: 'box', storlek: [0.016, 0.36, 0.62] },
+    source: K_ETK + ' (64 53 Kondensor). Placering framför kylaren är belagd, mått uppskattade.', pos: [1.97, 0.52, 0], form: 'box', storlek: [0.016, 0.36, 0.62] },
   { id: 'ac-torkfilter', namn: 'Torkfilter (receiver)', grupp: 'ac', ref: '', beskrivning: 'Sitter på kondensorns högra sida. Steg 3: tar upp fukt och smuts ur köldmediet.',
     source: K_ETK + ' (64 53 Torkfilter). Sida ej belagd.', approx: true, pos: [2.03, 0.55, 0.345], form: 'cylinder', storlek: [0.03, 0.24], axel: 'y' },
   { id: 'ac-vatskeledning', namn: 'Vätskeledning (kondensor till expansionsventil)', grupp: 'ac', ref: '', beskrivning: 'Går längs höger sida i motorrummet, förbi höger framhjul, från torkfiltret till expansionsventilen vid torpedväggen.',
@@ -344,14 +345,14 @@ const DELAR = [
       { form: 'box', pos: [0, 0.035, 0], storlek: [0.022, 0.02, 0.022] },
     ] },
   { id: 'ac-serviceventiler', namn: 'Serviceventiler (hög- och lågtryck)', grupp: 'ac', ref: '', beskrivning: 'Påfyllningsnipplarna för AC-service: en på vätskeledningen (högtryck) och en på sugledningen (lågtryck).',
-    source: K_ETK + ' (64 50). Lägen ej belagda.', approx: true, pos: [1.40, 0.52, 0.59], fler: [[1.40, 0.88, 0.39]], form: 'cylinder', storlek: [0.012, 0.05], axel: 'y' },
+    source: K_ETK + ' (64 50). Lägen ej belagda.', approx: true, pos: [1.40, 0.52, 0.59], fler: [[1.40, 0.85, 0.39]], form: 'cylinder', storlek: [0.012, 0.05], axel: 'y' },
   { id: 'ac-expansionsventil', namn: 'Expansionsventil', grupp: 'ac', ref: '', beskrivning: 'Vid torpedväggen där ledningarna går in i värmepaketet. Steg 4: sänker trycket så att köldmediet blir kallt.',
     source: K_ETK + ' (64 11 Expansionsventil). Sidled ej belagt.', approx: true, pos: [0.95, 0.80, 0.21], form: 'rbox', storlek: [0.04, 0.06, 0.06] },
   { id: 'ac-forangare', namn: 'Förångare', grupp: 'ac', ref: '', beskrivning: 'I värmepaketet bakom instrumentbrädan, i mitten. Steg 5: kyler luften som blåses in i kupén.',
     source: K_ETK + ' (64 11 Värme- och klimataggregat).', approx: true, pos: [0.74, 0.68, 0.04], form: 'box', storlek: [0.06, 0.22, 0.30] },
   { id: 'ac-sugledning', namn: 'Sugledning (lågtryck, förångare till kompressor)', grupp: 'ac', ref: '', beskrivning: 'Leder den kalla gasen tillbaka från förångaren till kompressorn, där kretsen börjar om.',
     source: K_ETK + ' (64 50 Köldmedieledningar). Dragning förenklad.', approx: true, form: 'tube', radie: 0.013,
-    banor: [[[0.95, 0.82, 0.17], [1.05, 0.88, 0.38], [1.70, 0.84, 0.40], [1.86, 0.64, 0.20], [1.80, 0.52, -0.05], [1.62, 0.54, -0.20]]] },
+    banor: [[[0.95, 0.82, 0.17], [1.05, 0.88, 0.38], [1.70, 0.81, 0.40], [1.86, 0.64, 0.20], [1.80, 0.52, -0.05], [1.62, 0.54, -0.20]]] },
   { id: 'kupeflakt', namn: 'Kupéfläkt', grupp: 'ac', ref: '', beskrivning: 'Fläkten som blåser luft genom förångaren och värmepaketet in i kupén.',
     source: K_ETK + ' (64 11 Fläktmotor). Läge ej belagt.', approx: true, pos: [0.72, 0.55, 0.26], former: [
       { form: 'cylinder', pos: [0, 0, 0], storlek: [0.08, 0.07], axel: 'y' },
@@ -410,9 +411,9 @@ const DELAR = [
 
   // ---------------- El och ljus ----------------
   { id: 'baklykta-vanster-kaross', namn: 'Baklykta vänster, karossdel', grupp: 'el', ref: '61 B28', beskrivning: 'Yttre delen av vänster baklykta, fast i karossen vid hörnet.',
-    source: K_ETK + ' (63 21 Baklykta).', pos: [-2.21, 0.92, -0.72], form: 'rbox', storlek: [0.14, 0.11, 0.20] },
+    source: K_ETK + ' (63 21 Baklykta).', pos: [-2.13, 0.875, -0.64], form: 'rbox', storlek: [0.14, 0.08, 0.12] },
   { id: 'baklykta-vanster-lucka', namn: 'Baklykta vänster, luckdel', grupp: 'el', ref: '61 B28', beskrivning: 'Inre delen av vänster baklykta, sitter i bakluckan.',
-    source: K_ETK + ' (63 21 Baklykta i baklucka).', pos: [-2.285, 0.93, -0.49], form: 'rbox', storlek: [0.04, 0.09, 0.22] },
+    source: K_ETK + ' (63 21 Baklykta i baklucka).', pos: [-2.23, 0.905, -0.47], form: 'rbox', storlek: [0.03, 0.07, 0.15] },
   { id: 'frm-ljusmodul', namn: 'FRM-ljusmodul', grupp: 'el', ref: '61 B28', beskrivning: 'Ljusmodulen (Footwell Module) bakom sidoklädseln i vänster fotutrymme. Styr ytterbelysningen.',
     source: K_ETK + ' (61 35 Fotrumsmodul).', approx: true, pos: [0.78, 0.42, -0.72], form: 'box', storlek: [0.14, 0.16, 0.04] },
   { id: 'batteri', namn: 'Batteri', grupp: 'el', ref: '', beskrivning: 'I bagaget under golvet, på höger sida.',
@@ -422,9 +423,9 @@ const DELAR = [
   { id: 'sakringsdosa-bagage', namn: 'Säkringsdosa bagage', grupp: 'el', ref: '', beskrivning: 'Strömfördelningen med de stora säkringarna i bagagets högra sida, bakom sidoklädseln vid batteriet.',
     source: K_ETK + ' (61 13 Strömfördelare bak).', approx: true, pos: [-1.80, 0.55, 0.62], form: 'box', storlek: [0.16, 0.12, 0.05] },
   { id: 'stralkastare-vanster', namn: 'Strålkastare vänster', grupp: 'el', ref: '69', beskrivning: 'Vänster strålkastare.',
-    source: K_ETK + ' (63 11 Strålkastare).', pos: [1.99, 0.72, -0.58], form: 'rbox', storlek: [0.22, 0.12, 0.30] },
+    source: K_ETK + ' (63 11 Strålkastare).', pos: [1.90, 0.635, -0.58], rot: [0, 0.51, 0], form: 'rbox', storlek: [0.10, 0.09, 0.32] },
   { id: 'stralkastare-hoger', namn: 'Strålkastare höger', grupp: 'el', ref: '69', beskrivning: 'Höger strålkastare.',
-    source: K_ETK + ' (63 11 Strålkastare).', pos: [1.99, 0.72, 0.58], form: 'rbox', storlek: [0.22, 0.12, 0.30] },
+    source: K_ETK + ' (63 11 Strålkastare).', pos: [1.90, 0.635, 0.58], rot: [0, -0.51, 0], form: 'rbox', storlek: [0.10, 0.09, 0.32] },
 
   // ---------------- Övrigt ----------------
   // id behålls från första versionen så att gamla länkar fungerar
@@ -639,7 +640,8 @@ const DACK = [
 // mark till skärmkantens högsta punkt fram 670 mm (del 13), bak 665 mm båda sidor (del 16-17).
 // Dokumentet räknar spalten mot däckets uppmätta diameter 650 mm (nominellt 643), med 10-15 mm intryckning:
 // fram 30-35 mm, bak 25-30 mm. Merdiametern 6,7 mm antas gälla alla däck (nominellt mot nominellt, del 22.6).
-const HJULHUS = { fram: 670, bak: 665 };
+// Källan för talen är KAROSS_MATT.hjulhus i kaross.js (läppens kant), samma som karossen byggs efter.
+const HJULHUS = { fram: Math.round(KAROSS_MATT.hjulhus[0].topp * 1000), bak: Math.round(KAROSS_MATT.hjulhus[1].topp * 1000) };
 const D_UPPMATT = 650, INTRYCK = [10, 15], INTRYCK_MITT = 12;
 const FABRIK_D = 634.3; // 225/45R17, fabriksdäcket som mätaren är kodad för (dokument 30, femprocentsregeln)
 const SKARM_UT = [105, 115]; // skärmkanten från navets anläggningsyta, uppskattad (del 22.9, rättelsen)
@@ -1020,242 +1022,26 @@ async function startaViewer() {
   markEtikett('HÖGER', 0, 1.4, 0);
 
   // ============================================================
-  // Kaross: loftade tvärsnitt efter E91:s profil
-  // Längd 4 520, bredd 1 817, höjd 1 418, hjulbas 2 760, överhäng ca 0,80 fram och 0,96 bak (mm/m).
-  // Mått och spårvidd (1 500 fram, 1 513 bak): auto-data.net, "BMW 3 Series Touring (E91) 325xi".
-  // Profilen (huv, vindruta, tak, baklucka, bälte och karaktärslinje) är egen geometri, uppskattad efter
-  // E91 före LCI (2005-2008) och skalad mot måtten ovan. Ingen ritning eller modell kopierad.
+  // Kaross: subdivision-modell i kaross.js (byggKaross), se kommentaren högst upp där för källor och mått.
+  // Hjulhusens mått (KAROSS_MATT.hjulhus) är samma tal som luften och mätlinjerna räknas mot.
   // ============================================================
   const bil = new THREE.Group();
   scene.add(bil);
   // Karossen och delarna sitter i kropp, som höjs och sänks med valt däck. Hjulen sitter i bil.
   const kropp = new THREE.Group();
   bil.add(kropp);
-  const FRAM_X = 2.18, BAK_X = -2.34;
-  const lerpTab = (tab, x) => { // tab sorterad på x fallande
-    if (x >= tab[0][0]) return tab[0][1];
-    for (let i = 1; i < tab.length; i++) {
-      const [x1, y1] = tab[i];
-      if (x >= x1) { const [x0, y0] = tab[i - 1]; const t = (x - x0) / (x1 - x0); const s = t * t * (3 - 2 * t); return y0 + (y1 - y0) * (0.35 * t + 0.65 * s); }
-    }
-    return tab[tab.length - 1][1];
-  };
-  // Mittlinjens överkant: nos, motorhuv, vindruta, tak, bakruta, baklucka
-  // Nosen lutar framåt nedtill (njurarna), lång huv som stiger mot torpedväggen, flackt tak långt bak,
-  // takspoiler, ganska upprätt bakruta och en nästan lodrät nedre baklucka med lyktorna.
-  const TOPP = [[2.18, 0.54], [2.165, 0.66], [2.13, 0.75], [2.07, 0.815], [1.90, 0.855], [1.50, 0.915], [1.00, 0.975], [0.62, 1.16], [0.22, 1.35], [0.0, 1.375], [-0.8, 1.393], [-1.6, 1.385], [-1.98, 1.365], [-2.04, 1.33], [-2.21, 1.03], [-2.31, 0.99], [-2.325, 0.90], [-2.335, 0.70], [-2.34, 0.50]];
-  // Bältlinje (rutornas underkant / skärmarnas överkant), stiger svagt bakåt
-  const BALTE = [[2.18, 0.52], [2.13, 0.74], [1.95, 0.81], [1.40, 0.88], [1.00, 0.945], [0.40, 0.97], [-1.00, 0.995], [-2.05, 1.025], [-2.30, 0.985], [-2.34, 0.58]];
-  // Karaktärslinjen (skulderlinjen): från strålkastarens ytterhörn, över dörrhandtagen, upp mot baklyktan
-  const SKULDRA = [[2.12, 0.70], [1.85, 0.775], [1.00, 0.805], [0.0, 0.83], [-1.20, 0.86], [-2.10, 0.895], [-2.34, 0.87]];
-  // Halv bredd vid axeln (planvy med rundade hörn), totalbredd 1 817
-  const HALVB = [[2.18, 0.62], [2.15, 0.77], [2.08, 0.855], [1.90, 0.895], [1.40, 0.905], [0.0, 0.9085], [-1.40, 0.905], [-2.05, 0.895], [-2.25, 0.86], [-2.32, 0.80], [-2.34, 0.68]];
-  // Halv bredd vid taket/huvkanten
-  const HALVT = [[2.18, 0.50], [2.10, 0.66], [1.60, 0.75], [1.00, 0.77], [0.22, 0.655], [-1.90, 0.645], [-2.20, 0.62], [-2.34, 0.52]];
-  const BOTTEN = [[2.18, 0.36], [2.15, 0.25], [2.08, 0.21], [1.90, 0.20], [-2.10, 0.21], [-2.30, 0.27], [-2.34, 0.34]];
-  const AXLAR = [1.38, -1.38];
-  // Hjulhusen är fasta i karossen och kalibrerade mot dagens däck (se HJULHUS ovan): navet står på
-  // uppmätt radie minus intryckning, 650/2 - 12 = 313 mm, och öppningens topp på 670 fram och 665 bak.
-  // Öppningen är 740 mm lång (del 13), alltså halvbredd 0,37.
-  const HJUL_Y0 = (D_UPPMATT / 2 - INTRYCK_MITT) / 1000, HJULHUS_RX = 0.37;
-  const HUS_Y = [HJULHUS.fram / 1000, HJULHUS.bak / 1000];
+  const AXLAR = KAROSS_MATT.axlar;
+  // Hjulhusen är fasta i karossen och kalibrerade mot dagens däck: navet står på KAROSS_MATT.navY
+  // (uppmätt radie minus intryckning, 650/2 - 12 = 313 mm) och hjulhusets cirkel har samma centrum.
+  // Läppens kant ligger på 670 mm fram och 665 mm bak (topp i KAROSS_MATT.hjulhus).
+  const HJUL_Y0 = KAROSS_MATT.navY;
+  const HUS_Y = KAROSS_MATT.hjulhus.map((h) => h.topp);
   // Sidled: spårvidden 1 500 fram och 1 513 bak gäller originalfälgen ET34, så navets anläggningsyta sitter
-  // spårvidd/2 + 34 mm från mitten. Skärmkanten läggs 110 mm utanför den (mitt i 105-115, del 22.9).
-  const NAVYTA = [1.500 / 2 + 0.034, 1.513 / 2 + 0.034];
-  const SKARM_Z = NAVYTA.map((n) => n + (SKARM_UT[0] + SKARM_UT[1]) / 2000);
+  // spårvidd/2 + 34 mm från mitten.
+  const NAVYTA = KAROSS_MATT.sparvidd.map((s) => s / 2 + 0.034);
 
-  // Kontrollpunkter per halva: c0 underkant, c1 axel, c2 bälte, c3 takkant, c4 rundning, c5 mitt
-  const SEG = [4, 2, 6, 2, 4]; // underdelningar mellan c0..c5
-  const PER_HALVA = SEG.reduce((a, b) => a + b, 0) + 1; // 19
-  const RAD_SKULDRA = SEG[0];                   // 4
-  const RAD_BALTE = SEG[0] + SEG[1];            // 6
-  const RAD_TAKKANT = RAD_BALTE + SEG[2];       // 12
-  const RING = PER_HALVA * 2 - 1;               // 37
-
-  function sektion(x) {
-    const topp = lerpTab(TOPP, x);
-    let balte = Math.min(lerpTab(BALTE, x), topp - 0.02);
-    const takkant = Math.max(balte, topp - 0.045);
-    const zb = lerpTab(HALVB, x);
-    const zt = Math.min(lerpTab(HALVT, x), zb - 0.06);
-    let botten = lerpTab(BOTTEN, x), zu = zb - 0.045;
-    AXLAR.forEach((ax, i) => {
-      const dx = Math.abs(x - ax);
-      if (dx < HJULHUS_RX) botten = Math.max(botten, HJUL_Y0 + (HUS_Y[i] - HJUL_Y0) * Math.sqrt(1 - (dx / HJULHUS_RX) ** 2));
-      // Underkanten går ut till skärmkanten runt hjulhuset (svag skärmbreddning)
-      const w = Math.min(1, Math.max(0, (HJULHUS_RX + 0.2 - dx) / 0.2));
-      zu += (SKARM_Z[i] - zu) * w * w * (3 - 2 * w);
-    });
-    botten = Math.min(botten, balte - 0.06);
-    const axel = Math.min(balte - 0.03, Math.max(botten + 0.03, lerpTab(SKULDRA, x)));
-    const r = Math.min(0.08, (topp - takkant) + 0.04);
-    const kontroll = [
-      [-zu, botten], [-zb, axel], [-(zb - 0.045), balte], [-zt, takkant], [-(zt - r), topp], [0, topp + (x > 1.0 ? 0.02 : 0.025)],
-    ];
-    const halva = [];
-    for (let s = 0; s < SEG.length; s++) {
-      const [z0, y0] = kontroll[s], [z1, y1] = kontroll[s + 1];
-      for (let k = 0; k < SEG[s]; k++) {
-        const t = k / SEG[s];
-        // lätt bombering på sidorna och taket
-        const bula = (s === 0 || s === 2) ? Math.sin(Math.PI * t) * 0.012 : (s === 4 ? Math.sin(Math.PI * t) * 0.01 : 0);
-        halva.push([z0 + (z1 - z0) * t - (s < 3 ? bula : 0), y0 + (y1 - y0) * t + (s === 4 ? bula : 0)]);
-      }
-    }
-    halva.push(kontroll[5]);
-    const ring = halva.map(([z, y]) => [x, y, z]);
-    for (let j = PER_HALVA - 2; j >= 0; j--) ring.push([x, halva[j][1], -halva[j][0]]);
-    return { ring, topp, balte, takkant };
-  }
-
-  const stationer = [2.18, 2.175, 2.165, 2.15, 2.13, 2.10, 2.06];
-  for (let x = 2.0; x > -2.26; x -= 0.05) stationer.push(+x.toFixed(3));
-  stationer.push(-2.28, -2.30, -2.315, -2.325, -2.335, -2.34);
-  const sektioner = stationer.map(sektion);
-
-  // Rutor: sidorutor mellan bälte och takkant (utom stolparna), vindruta och bakruta i takraderna.
-  // Bakre sidorutans bakkant (D-stolpen) som funktion av höjden t (0 = bälte, 1 = takkant):
-  // underkanten slutar tidigt och viker uppåt bakåt, Hofmeister-knicken.
-  const RUTA_BAK = [[1, -2.03], [0.55, -2.08], [0.25, -2.0], [0, -1.86]];
-  const PELARE = [[-0.20, -0.08], [-1.24, -1.12]];
-  const arSidoruta = (x, s, t) => x < 0.90 && x > lerpTab(RUTA_BAK, t) && (s.takkant - s.balte) > 0.13 && !PELARE.some(([a, b]) => x > a && x < b);
-  const arVindruta = (x) => (x < 0.94 && x > 0.27) || (x < -2.01 && x > -2.20);
-
-  const pos = [], idxPlat = [], idxGlas = [];
-  for (const s of sektioner) for (const p of s.ring) pos.push(...p);
-  for (let i = 0; i < sektioner.length - 1; i++) {
-    const xm = (stationer[i] + stationer[i + 1]) / 2;
-    const sm = sektioner[i];
-    for (let j = 0; j < RING - 1; j++) {
-      const a = i * RING + j, b = a + 1, c = a + RING, d = c + 1;
-      const jj = j < PER_HALVA - 1 ? j : RING - 2 - j; // spegla till vänster halva
-      let glas = false;
-      if (jj >= RAD_BALTE && jj < RAD_TAKKANT) glas = arSidoruta(xm, sm, (jj - RAD_BALTE + 0.5) / SEG[2]);
-      else if (jj >= RAD_TAKKANT + 2 && arVindruta(xm)) glas = true;
-      (glas ? idxGlas : idxPlat).push(a, c, b, b, c, d);
-    }
-  }
-  // Ändlock fram och bak
-  const lock = (i, omvand) => {
-    const s = sektioner[i];
-    const mitt = s.ring.reduce((acc, p) => [acc[0] + p[0] / RING, acc[1] + p[1] / RING, acc[2] + p[2] / RING], [0, 0, 0]);
-    const ci = pos.length / 3;
-    pos.push(...mitt);
-    for (let j = 0; j < RING - 1; j++) {
-      const a = i * RING + j, b = a + 1;
-      if (omvand) idxPlat.push(ci, b, a); else idxPlat.push(ci, a, b);
-    }
-  };
-  lock(0, false);
-  lock(sektioner.length - 1, true);
-
-  const karossGeo = new THREE.BufferGeometry();
-  karossGeo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-  karossGeo.setIndex([...idxPlat, ...idxGlas]);
-  karossGeo.addGroup(0, idxPlat.length, 0);
-  karossGeo.addGroup(idxPlat.length, idxGlas.length, 1);
-  karossGeo.computeVertexNormals();
-  const platMat = new THREE.MeshStandardMaterial({ color: 0x9aa3ad, transparent: true, opacity: 0.15, depthWrite: false, roughness: 0.45, metalness: 0.2, side: THREE.DoubleSide });
-  const glasMat = new THREE.MeshStandardMaterial({ color: 0x2b3440, transparent: true, opacity: 0.1, depthWrite: false, roughness: 0.1, metalness: 0.4, side: THREE.DoubleSide });
-  const lyktMat = new THREE.MeshStandardMaterial({ color: 0x8fb8e0, emissive: 0x24476b, transparent: true, opacity: 0.5, depthWrite: false, roughness: 0.1, metalness: 0.3, side: THREE.DoubleSide });
-  const bakljusMat = new THREE.MeshStandardMaterial({ color: 0xb3261e, transparent: true, opacity: 0.5, depthWrite: false, roughness: 0.2, side: THREE.DoubleSide });
-  const svartMat = new THREE.MeshStandardMaterial({ color: 0x27272a, transparent: true, opacity: 0.5, depthWrite: false, roughness: 0.7 });
-  const kaross = new THREE.Mesh(karossGeo, [platMat, glasMat]);
-  kaross.renderOrder = 10;
-  const karossGrupp = new THREE.Group();
-  karossGrupp.add(kaross);
+  const karossGrupp = byggKaross(THREE);
   kropp.add(karossGrupp);
-
-  // Linjer: bälte, takkant, dörrar, huv, baklucka, hjulhus
-  const linjeMat = new THREE.LineBasicMaterial({ color: 0x6b7280, transparent: true, opacity: 0.6 });
-  const punktPa = (x, j) => { const s = sektion(x); return s.ring[j]; };
-  // Punkt på karossen vid x och ett fraktionellt radindex f (höger halva), z speglas med sida -1
-  const ytPunkt = (x, f, sida = 1) => {
-    const r = sektion(x).ring, j0 = Math.min(Math.floor(f), PER_HALVA - 2), k = f - j0;
-    const p = r[j0].map((v, n) => v + (r[j0 + 1][n] - v) * k);
-    return [p[0], p[1], p[2] * sida];
-  };
-  const linje = (pts) => karossGrupp.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts.map(V)), linjeMat));
-  const langsLinje = (j, x0, x1) => { const p = []; for (let i = 0; i < stationer.length; i++) { const x = stationer[i]; if (x <= x0 && x >= x1) p.push(sektioner[i].ring[j]); } linje(p); };
-  for (const sida of [0, 1]) {
-    const jr = (j) => (sida === 0 ? j : RING - 1 - j);
-    langsLinje(jr(0), FRAM_X, BAK_X);                       // underkant med hjulhus
-    langsLinje(jr(RAD_BALTE), FRAM_X - 0.02, BAK_X + 0.01); // bältlinje
-    langsLinje(jr(RAD_TAKKANT), 0.94, -2.06);               // takkant / rutornas överkant
-    langsLinje(jr(RAD_TAKKANT + 1), 2.10, 0.98);            // motorhuvens skarv
-    langsLinje(jr(RAD_SKULDRA), 2.10, -2.30);               // karaktärslinjen (skulderlinjen)
-    for (const x of [0.98, -0.14, -1.18]) {                 // dörrskarvar
-      const p = []; for (let j = 0; j <= RAD_TAKKANT; j++) p.push(punktPa(x, jr(j))); linje(p);
-    }
-    // Rutornas stolpar
-    for (const [a, b] of PELARE) for (const x of [a, b]) { const p = []; for (let j = RAD_BALTE; j <= RAD_TAKKANT; j++) p.push(punktPa(x, jr(j))); linje(p); }
-    // D-stolpen med Hofmeister-knicken, interpolerad mellan ringens rader
-    const d = [];
-    for (let t = 0; t <= 1.001; t += 0.1) d.push(ytPunkt(lerpTab(RUTA_BAK, t), RAD_BALTE + t * SEG[2], sida === 0 ? 1 : -1));
-    linje(d);
-  }
-  for (const x of [0.94, 0.27, -2.01, -2.20, 2.10]) { // vindruta, bakruta, huvens framkant
-    const p = []; for (let j = RAD_TAKKANT; j <= RING - 1 - RAD_TAKKANT; j++) p.push(punktPa(x, j)); linje(p);
-  }
-  // Takreling (E91) med fötter, backspeglar, dörrhandtag och svarta trösklar
-  for (const s of [-1, 1]) {
-    const p = [];
-    for (let x = 0.05; x >= -1.93; x -= 0.15) { const r = sektion(x).ring[s < 0 ? RAD_TAKKANT + 2 : RING - 3 - RAD_TAKKANT]; p.push([r[0], r[1] + (x > 0 || x < -1.85 ? 0.01 : 0.04), r[2] * 0.97]); }
-    const rel = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(p.map(V)), 30, 0.012, 6), platMat);
-    karossGrupp.add(rel);
-    const spegel = new THREE.Mesh(new RoundedBoxGeometry(0.10, 0.09, 0.17, 2, 0.03), platMat);
-    spegel.position.set(0.82, 1.0, s * 0.99);
-    karossGrupp.add(spegel);
-    for (const x of [0.06, -0.98]) {
-      const h = new THREE.Mesh(new RoundedBoxGeometry(0.15, 0.03, 0.03, 2, 0.012), svartMat);
-      h.position.set(x, lerpTab(SKULDRA, x) - 0.03, s * 0.905);
-      karossGrupp.add(h);
-    }
-    const troskel = new THREE.Mesh(new RoundedBoxGeometry(1.96, 0.08, 0.05, 2, 0.02), svartMat);
-    troskel.position.set(0, 0.25, s * 0.875);
-    karossGrupp.add(troskel);
-  }
-  // Lyktor som tunna lappar på karossytan (x, radindex f0..f1), med kontur: smala strålkastare som
-  // drar bakåt in i skärmen, baklyktan delad mellan karossen (hörnet) och bakluckan
-  function lapp(x0, x1, f0, f1, mat) {
-    const NX = 10, NF = 3, pts = [], ix = [], kant = [[], [], [], []];
-    for (const sida of [1, -1]) {
-      const bas = pts.length / 3;
-      for (let a = 0; a <= NX; a++) {
-        const x = x0 + (x1 - x0) * a / NX;
-        for (let b = 0; b <= NF; b++) {
-          const p = ytPunkt(x, f0(x) + (f1(x) - f0(x)) * b / NF, sida);
-          pts.push(p[0], p[1], p[2] * 1.004);
-          if (sida === 1) { if (b === 0) kant[0].push(p); if (b === NF) kant[1].push(p); if (a === 0) kant[2].push(p); if (a === NX) kant[3].push(p); }
-          if (a < NX && b < NF) { const i = bas + a * (NF + 1) + b; ix.push(i, i + NF + 1, i + 1, i + 1, i + NF + 1, i + NF + 2); }
-        }
-      }
-    }
-    const g = new THREE.BufferGeometry();
-    g.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
-    g.setIndex(ix); g.computeVertexNormals();
-    const m = new THREE.Mesh(g, mat);
-    m.renderOrder = 11; // ritas efter plåten så att den inte bleker lyktan
-    karossGrupp.add(m);
-    for (const sida of [1, -1]) for (const k of kant) linje(k.map((p) => [p[0], p[1], p[2] * sida]));
-  }
-  lapp(1.86, 2.165, (x) => 3.8 + Math.max(0, 1.97 - x) * 12, (x) => 5.8 + Math.max(0, x - 2.06) * 22, lyktMat);
-  lapp(-2.31, -2.12, () => 3.7, (x) => 6 + Math.max(0, -2.27 - x) * 40, bakljusMat);
-  for (const s of [-1, 1]) {
-    const l = new THREE.Mesh(new RoundedBoxGeometry(0.012, 0.085, 0.30, 2, 0.005), bakljusMat);
-    l.position.set(-2.322, 0.935, s * 0.45); l.rotation.z = -0.15; l.renderOrder = 11;
-    karossGrupp.add(l);
-  }
-  // Takspoiler över bakrutan
-  const spoiler = new THREE.Mesh(new RoundedBoxGeometry(0.18, 0.03, 1.20, 2, 0.012), platMat);
-  spoiler.position.set(-2.04, 1.36, 0); spoiler.rotation.z = 0.12;
-  karossGrupp.add(spoiler);
-  // Njurgrill: två njurar i nosen, lutade bakåt upptill
-  for (const s of [-1, 1]) {
-    const n = new THREE.Mesh(new RoundedBoxGeometry(0.04, 0.13, 0.17, 2, 0.03), svartMat);
-    n.position.set(2.155, 0.68, s * 0.105); n.rotation.z = 0.35;
-    karossGrupp.add(n);
-  }
 
   // ---------- Hjul: däck och fälg efter valt däck (DACK), byts i satDack() ----------
   // Ritad radie = nominell diameter + dagens uppmätta merdiameter, så att spalten i modellen stämmer med dackTal().
@@ -1430,7 +1216,8 @@ async function startaViewer() {
       const x = AXLAR[lm.ai], z = -(NAVYTA[lm.ai] + v.ut / 1000); // däckets yttersida
       const hus = HUS_Y[lm.ai] + kropp.position.y;
       const dt = 2 * m.R - INTRYCK_MITT / 1000; // däckets topp över marken
-      lm.linje.geometry.setFromPoints([[x, dt, z], [x, hus, z], [x - 0.04, dt, z], [x + 0.04, dt, z], [x - 0.04, hus, z], [x + 0.04, hus, z]].map(V));
+      const zl = -karossGrupp.userData.hjulhusZ[lm.ai]; // läppens yttersida i hjulhusets topp (vänster sida)
+      lm.linje.geometry.setFromPoints([[x, dt, z], [x, hus, z], [x - 0.04, dt, z], [x + 0.04, dt, z], [x - 0.04, hus, z], [x + 0.04, hus, z], [x, hus, z], [x, hus, zl]].map(V));
       lm.etikett.position.set(x, hus + 0.06, z); // ovanför skärmkanten, så att spalten syns
       lm.text.textContent = `luft ${lm.ai ? 'bak' : 'fram'} ca ${mm(v.luftMitt[lm.ai ? 'bak' : 'fram'])} mm`;
     }
@@ -1505,15 +1292,8 @@ async function startaViewer() {
     if (fokus && nagot) fokusera([...markerade], direkt);
   }
   function opacitet(v) {
-    karossGrupp.visible = v > 0.001;
-    const fast = v >= 0.999;
-    platMat.opacity = v; platMat.transparent = !fast; platMat.depthWrite = fast;
-    glasMat.opacity = Math.min(0.55, 0.1 + v * 0.45);
+    karossGrupp.userData.opacitet(v);
     inredMat.opacity = Math.min(0.35, v * 2);
-    lyktMat.opacity = bakljusMat.opacity = Math.min(0.6, 0.15 + v * 0.5);
-    svartMat.opacity = Math.min(0.7, v * 1.5);
-    linjeMat.opacity = Math.min(0.75, 0.25 + v);
-    platMat.needsUpdate = true;
   }
 
   // ---------- Klick / tapp ----------
@@ -1570,9 +1350,7 @@ async function startaViewer() {
 
   function tema() {
     const d = morkt();
-    platMat.color.set(d ? 0xb4bcc6 : 0x8f99a4);
-    glasMat.color.set(d ? 0x7a8696 : 0x2b3440);
-    linjeMat.color.set(d ? 0xa1a1aa : 0x52525b);
+    karossGrupp.userData.tema(d);
     markText.forEach((f) => f());
   }
   tema();

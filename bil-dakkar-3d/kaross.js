@@ -24,11 +24,20 @@
 //   hjulhusöppningens topp 670 mm fram och 665 mm bak över marken, öppningen 740 mm i längsled.
 // ============================================================
 
+// Hjulhusen: öppningen är en cirkelbåge koncentrisk med navet, med dagens däck 235/45R17 monterat.
+// Navet står på uppmätt radie minus intryckning, 650/2 - 12 = 313 mm. Läppens kant (öppningens
+// innerkant, där luften mäts) går på radien topp - nav: 357 mm fram och 352 mm bak. Under navets höjd
+// fortsätter kanten lodrätt ned till stötfångarens underkant och tröskeln. Vulsten (läppen) är 16 mm
+// bred utanför kanten, så att öppningen mätt över vulsten blir 2 x (357 + 16) = 746 mm fram och
+// 736 mm bak, i snitt 740 mm som uppmätt.
+const NAV_Y = 0.313, HJULHUS_TOPP = [0.670, 0.665], LAPP = 0.016;
 export const KAROSS_MATT = {
   axlar: [1.38, -1.38],
   sparvidd: [1.500, 1.513],
   framX: 2.135, bakX: -2.385,
-  hjulhus: [{ x: 1.38, cy: 0.300, r: 0.37 }, { x: -1.38, cy: 0.295, r: 0.37 }],
+  navY: NAV_Y,
+  // x, cy = cirkelns centrum (navet med dagens däck), r = läppens kant, topp = cy + r, lapp = vulstens bredd
+  hjulhus: HJULHUS_TOPP.map((topp, i) => ({ x: [1.38, -1.38][i], cy: NAV_Y, r: +(topp - NAV_Y).toFixed(4), topp, lapp: LAPP })),
 };
 
 // ---------- Hjälpfunktioner ----------
@@ -69,16 +78,24 @@ const aStolpe = (x) => { const t = klamp((0.84 - x) / 0.84, 0, 1); return { t, y
 // Vindrutans mittlinje (lätt bombering)
 const vindrutaY = (xc) => { const t = klamp((0.88 - xc) / 0.88, 0, 1); return 0.965 + 0.425 * t + 0.03 * Math.sin(Math.PI * t); };
 
-// Stationer längs bilen (x vid sidan). Tätare kring hjulhusen: ax +-0,41 (hörn), 0,37, 0,22, 0.
-const ST = [2.00, 1.92, 1.79, 1.75, 1.60, 1.38, 1.16, 1.01, 0.97, 0.86, 0.62, 0.30, 0.0, -0.40, -0.80, -0.97, -1.01, -1.16, -1.38, -1.60, -1.75, -1.79, -1.95, -2.12, -2.25];
-const NI = ST.length - 1; // 24
+// Stationer längs bilen (x vid sidan). Runt varje hjulhus läggs stationerna på cirkeln, var 30:e grad
+// (0, 30, 60, 90 grader från horisontalen), plus en hörnstation 15 mm utanför där kanten möter
+// tröskeln och stötfångaren. Då ligger kontrollnätets kant redan på bågen före utslätningen.
+const HH_VINKLAR = [0, 30, 60];
+const hjulhusStationer = (h) => {
+  const d = [h.r + 0.015, ...HH_VINKLAR.map((v) => h.r * Math.cos(v * Math.PI / 180))];
+  return [...d.map((o) => h.x + o), h.x, ...d.slice().reverse().map((o) => h.x - o)].map((x) => +x.toFixed(4));
+};
+const ST = [2.00, 1.92, ...hjulhusStationer(KAROSS_MATT.hjulhus[0]), 0.97, 0.86, 0.62, 0.30, 0.0, -0.40, -0.80,
+  ...hjulhusStationer(KAROSS_MATT.hjulhus[1]), -1.95, -2.12, -2.25];
+const NI = ST.length - 1; // 29
 const I_HUV = ST.indexOf(0.97), I_TAK = ST.indexOf(0.0), I_TAKSLUT = ST.indexOf(-1.95);
 
 function hjulhus(x) {
   for (const h of KAROSS_MATT.hjulhus) {
     const d = Math.abs(x - h.x);
-    if (d < h.r + 0.005) return { y: h.cy + Math.sqrt(Math.max(0, h.r * h.r - d * d)), hors: false };
-    if (d < h.r + 0.05) return { y: null, hors: true }; // hörnet där öppningen möter tröskel/stötfångare
+    if (d < h.r + 1e-4) return { y: h.cy + Math.sqrt(Math.max(0, h.r * h.r - d * d)), hors: false };
+    if (d < h.r + 0.02) return { y: null, hors: true }; // hörnet där öppningen möter tröskel/stötfångare
   }
   return null;
 }
@@ -121,8 +138,8 @@ function sidPunkt(i) {
   let y, z;
   if (hh && !hh.hors) {
     const a = hh.y;
-    y = [a, a + Math.min(0.02, (j4 - a) * 0.25), a + (j4 - a) * 0.4, a + (j4 - a) * 0.7, j4];
-    z = [zm - 0.01, zm + 0.006, zm - 0.004, zm, zm - 0.003];
+    y = [a, a + Math.min(0.035, (j4 - a) * 0.3), a + (j4 - a) * 0.4, a + (j4 - a) * 0.7, j4];
+    z = [zm - 0.004, zm - 0.002, zm - 0.003, zm, zm - 0.003];
   } else {
     const j1 = TROSKEL(xs), j3 = j4 - 0.12;
     y = [BOTTEN(xs), j1, (j1 + j3) / 2, j3, j4];
@@ -168,7 +185,7 @@ function byggNat() {
   const kant = (a, b, s) => skarp.push([a, b, s]);
   for (let i = 0; i < NI; i++) kant(S(i, 4), S(i + 1, 4), 2);                  // skulderlinjen
   for (let i = 0; i < I_HUV; i++) kant(C(i, 2), C(i + 1, 2), 2);              // huvens veck
-  for (let i = 2; i < NI - 3; i++) kant(S(i, 1), S(i + 1, 1), 1);             // tröskellinje och hjulhuslist
+  for (let i = 2; i < NI - 3; i++) if (!hjulhus(ST[i]) && !hjulhus(ST[i + 1])) kant(S(i, 1), S(i + 1, 1), 1); // tröskellinjen (runt hjulhusen tar läppen över)
   for (let i = I_HUV; i < NI; i++) { kant(C(i, 6), C(i + 1, 6), 1); kant(C(i, 4), C(i + 1, 4), 1); } // bälte, A-stolpe/takkant
   for (let k = 0; k < 6; k++) { kant(C(0, k), C(0, k + 1), 1); kant(C(I_TAKSLUT, k), C(I_TAKSLUT, k + 1), 1); kant(C(NI, k), C(NI, k + 1), 1); }
   for (let k = 0; k < 6; k++) kant(Bv(k, 4), Bv(k + 1, 4), 1);                  // skulderlinjen fortsätter över bakpartiet
@@ -244,6 +261,25 @@ function interpolera(nat, varv = 3) {
   return { ...nat, V };
 }
 
+// Hjulhusens kant: lackens fria kant runt öppningen flyttas exakt ut på cirkeln (ovanför navet) och
+// på lodlinjen x = centrum +- r (under navet). Kontrollnätet ligger redan på bågen, så flytten är
+// några mm; den gör att kanten under läppen blir en ren cirkel i stället för en B-spline.
+function hjulhusKant({ V, F }) {
+  const ek = (a, b) => (a < b ? a * 1e6 + b : b * 1e6 + a), antal = new Map();
+  for (const f of F) for (let c = 0; c < f.length; c++) { const k = ek(f[c], f[(c + 1) % f.length]); antal.set(k, (antal.get(k) || 0) + 1); }
+  const kant = new Set();
+  for (const [k, n] of antal) if (n === 1) { kant.add(Math.floor(k / 1e6)); kant.add(k % 1e6); }
+  for (const i of kant) {
+    const p = V[i];
+    for (const h of KAROSS_MATT.hjulhus) {
+      const dx = p[0] - h.x, dy = p[1] - h.cy;
+      if (Math.abs(dx) > h.r + 0.012 || p[1] < 0.12 || p[1] > h.topp + 0.03) continue;
+      if (dy >= 0) { const l = Math.hypot(dx, dy) || 1; p[0] = h.x + dx / l * h.r; p[1] = h.cy + dy / l * h.r; }
+      else p[0] = h.x + Math.sign(dx) * h.r;
+    }
+  }
+}
+
 // ---------- Djupkarta: projicera punkter ned på lacken längs en riktning ----------
 function djupkarta(THREE, pos, nor, index, u, v, w, a0, a1, b0, b1, h = 0.01) {
   const W = Math.ceil((a1 - a0) / h) + 1, Hh = Math.ceil((b1 - b0) / h) + 1;
@@ -298,7 +334,7 @@ export function byggKaross(THREE, opts = {}) {
     lack: opts.lack || std({ color: 0x9aa3ad, roughness: 0.38, metalness: 0.25 }),
     glas: opts.glas || std({ color: 0x24303c, roughness: 0.05, metalness: 0.4, opacity: 0.82, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }),
     svart: std({ color: 0x0f1012, roughness: 0.55, metalness: 0.1, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 }),
-    innerskarm: std({ color: 0x0c0d0f, roughness: 0.9 }),
+    innerskarm: std({ color: 0x18191c, roughness: 0.9 }),
     lyse: std({ color: 0x59636e, roughness: 0.15, metalness: 0.7, emissive: 0x15181c, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }),
     bak: std({ color: 0xa3121c, roughness: 0.2, metalness: 0.1, emissive: 0x3a0306, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }),
     bryn: std({ color: 0xf2f2f0, roughness: 0.2, emissive: 0x6a6a68, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 }),
@@ -314,6 +350,7 @@ export function byggKaross(THREE, opts = {}) {
   // ---------- Lacken ----------
   let nat = interpolera(byggNat(), 3);
   nat = catmullClark(catmullClark(nat));
+  hjulhusKant(nat);
   const pos = new Float32Array(nat.V.length * 3);
   nat.V.forEach((p, i) => pos.set(p, i * 3));
   const ind = [];
@@ -366,6 +403,7 @@ export function byggKaross(THREE, opts = {}) {
     prov(n, (t) => { const f = Math.PI - Math.PI * t; return [ca + ha * Math.sign(Math.cos(f)) * Math.abs(Math.cos(f)) ** (2 / e), cb + hb * Math.abs(Math.sin(f)) ** (2 / e)]; }),
   ];
 
+  const kaross_hjulhusZ = [];
   const grupp = (namn) => { const g = new THREE.Group(); g.name = namn; return g; };
   const glas = grupp('glas'), svart = grupp('svart'), lyktor = grupp('lyktor'), detaljer = grupp('detaljer');
   const mesh = (g, mat, gr, ro = 12, parvis = false) => {
@@ -486,7 +524,7 @@ export function byggKaross(THREE, opts = {}) {
   linje(SIDA, [[0.775, 0.19], [0.775, 0.60], [0.765, 0.80], [0.74, balte(0.74) - 0.005]]);       // framdörrens framkant
   linje(SIDA, [[-0.30, 0.185], [-0.30, balte(-0.30) - 0.004]]);                                  // B-stolpen
   {
-    const hb = KAROSS_MATT.hjulhus[1], r = hb.r + 0.055, p = [[-1.32, balte(-1.32) - 0.004], [-1.31, 0.72]];
+    const hb = KAROSS_MATT.hjulhus[1], r = hb.r + hb.lapp + 0.04, p = [[-1.32, balte(-1.32) - 0.004], [-1.31, 0.72]];
     for (let k = 0; k <= 10; k++) { const f = 1.40 * (1 - k / 10); p.push([hb.x + r * Math.cos(f), hb.cy + r * Math.sin(f)]); }
     p.push([hb.x + r, 0.20]);
     linje(SIDA, p);                                                                             // bakdörrens bakkant runt hjulhuset
@@ -580,21 +618,68 @@ export function byggKaross(THREE, opts = {}) {
     r.rotation.z = Math.PI / 2; r.position.set(-2.33, 0.245, z); detaljer.add(r);
   }
 
-  // ---------- Hjulhus: svart innerskärm så att man inte ser in i karossen ----------
+  // ---------- Hjulhus: läpp (vulst) och innerskärm, båda svepta längs samma exakta cirkel ----------
+  // Banan går från den bakre nedre änden, lodrätt upp till navets höjd, över bågen (cirkel med radien
+  // rr runt navet) och ned igen. u = riktningen ut från öppningen i sidvyn.
+  const hjulhusBana = (hh, rr, n = 96) => {
+    const P = [], y0 = BOTTEN(hh.x - rr) + 0.004, y1 = BOTTEN(hh.x + rr) + 0.004;
+    for (let k = 0; k < 6; k++) P.push({ x: hh.x - rr, y: lerp(y0, hh.cy, k / 6), u: [-1, 0] });
+    for (let k = 0; k <= n; k++) { const f = Math.PI * (1 - k / n); P.push({ x: hh.x + rr * Math.cos(f), y: hh.cy + rr * Math.sin(f), u: [Math.cos(f), Math.sin(f)] }); }
+    for (let k = 5; k >= 0; k--) P.push({ x: hh.x + rr, y: lerp(y1, hh.cy, k / 6), u: [1, 0] });
+    return P;
+  };
+  // Läppens tvärsnitt i (u, n): n = lackens normal. Börjar på lacken LAPP utanför kanten, rundar
+  // ut några mm och viker in runt kanten till en fläns som går in mot hjulet.
+  const LAPP_PROFIL = [[1, -0.001], [0.8, 0.0035], [0.5, 0.0058], [0.2, 0.0052], [0, 0.0028], [-0.16, -0.002], [-0.12, -0.009], [0.06, -0.026]];
+  kaross_hjulhusZ.length = 0;
   for (const hh of KAROSS_MATT.hjulhus) {
-    const r = hh.r + 0.012, n = 28, prof = [];
-    prof.push([hh.x + r, hh.cy - 0.06]);
-    for (let k = 0; k <= n; k++) { const f = Math.PI * k / n; prof.push([hh.x + r * Math.cos(f), hh.cy + r * Math.sin(f)]); }
-    prof.push([hh.x - r, hh.cy - 0.06]);
-    const zo = ZMAX(hh.x) - 0.03, zi = 0.42;
-    for (const s of [-1, 1]) {
-      const P = [], idx = [];
-      for (const [x, y] of prof) P.push(x, y, s * zo, x, y, s * zi);
-      for (let k = 0; k < prof.length - 1; k++) { const a = k * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
-      const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setIndex(idx); g.computeVertexNormals();
-      mesh(g, M.innerskarm, svart, 9);
-      const form = new THREE.Shape(prof.map(([x, y]) => new THREE.Vector2(x, y)));
-      const vagg = new THREE.ShapeGeometry(form, 12); vagg.translate(0, 0, s * zi);
+    const bana = hjulhusBana(hh, hh.r), np = LAPP_PROFIL.length;
+    const P = [], idx = [], kant = [];
+    // Lackens läge och normal strax utanför kanten, utjämnade längs banan så att vulsten blir jämn
+    let senast = null;
+    const prov = bana.map((b) => {
+      // Närmaste lack ovanför punkten (längst ned kan kanten ligga under lackens sista rad)
+      let s = null;
+      for (let dy = 0; !s && dy < 0.08; dy += 0.005) s = SIDA.prov(b.x + b.u[0] * 0.008, b.y + b.u[1] * 0.008 + dy);
+      s = s || senast; senast = s;
+      return { z: s.p.z, n: s.n.clone() };
+    });
+    for (let varv = 0; varv < 4; varv++) {
+      const f = prov.map((p) => ({ z: p.z, n: p.n.clone() }));
+      for (let i = 0; i < prov.length; i++) {
+        let z = 0, w = 0; const n = new THREE.Vector3();
+        for (let k = -4; k <= 4; k++) { const q = f[klamp(i + k, 0, prov.length - 1)]; z += q.z; n.add(q.n); w++; }
+        prov[i].z = z / w; prov[i].n.copy(n.normalize());
+      }
+    }
+    bana.forEach((b, i) => {
+      const n = prov[i].n.clone(), t = new THREE.Vector3(-b.u[1], b.u[0], 0);
+      n.addScaledVector(t, -n.dot(t)).normalize();
+      const u = new THREE.Vector3(b.u[0], b.u[1], 0); u.addScaledVector(n, -u.dot(n)).normalize();
+      const E = new THREE.Vector3(b.x, b.y, prov[i].z);
+      kant.push(prov[i].z);
+      for (const [pu, pn] of LAPP_PROFIL) { const q = E.clone().addScaledVector(u, pu * hh.lapp).addScaledVector(n, pn); P.push(q.x, q.y, q.z); }
+    });
+    for (let i = 0; i < bana.length - 1; i++) for (let j = 0; j < np - 1; j++) {
+      const a = i * np + j, c = a + np;
+      idx.push(a, c, a + 1, a + 1, c, c + 1);
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setIndex(idx); g.computeVertexNormals();
+    const lapp = mesh(g, M.lack, detaljer, 10, true); lapp.name = 'hjulhuslapp';
+    kaross_hjulhusZ.push(kant[bana.length >> 1]);
+
+    // Innerskärmen: band strax utanför läppens fläns (radie r + 6 mm) in till zi, och en vägg vid zi
+    const fodral = hjulhusBana(hh, hh.r + 0.006, 64), zi = 0.42;
+    const zo = kant.reduce((m, z) => Math.min(m, z), 9) - 0.02;
+    for (const sd of [-1, 1]) {
+      const Q = [], iq = [];
+      for (const b of fodral) Q.push(b.x, b.y, sd * zo, b.x, b.y, sd * zi);
+      for (let k = 0; k < fodral.length - 1; k++) { const a = k * 2; iq.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+      const gb = new THREE.BufferGeometry(); gb.setAttribute('position', new THREE.Float32BufferAttribute(Q, 3)); gb.setIndex(iq); gb.computeVertexNormals();
+      mesh(gb, M.innerskarm, svart, 9);
+      const vagg = new THREE.ShapeGeometry(new THREE.Shape(fodral.map((b) => new THREE.Vector2(b.x, b.y))), 1);
+      vagg.translate(0, 0, sd * zi);
       mesh(vagg, M.innerskarm, svart, 9);
     }
   }
@@ -616,13 +701,18 @@ export function byggKaross(THREE, opts = {}) {
   kaross.userData.trianglar = Math.round(tri);
   kaross.userData.lackTrianglar = ind.length / 3;
   kaross.userData.material = { ...M, fog };
+  // Läppens z (yttersida) i hjulhusets topp, fram och bak: där mätlinjen i delkartan slutar
+  kaross.userData.hjulhusZ = kaross_hjulhusZ;
+  kaross.userData.kartor = { SIDA, TOPP, FRAM, BAK };
 
   // Opacitet 0..1: lacken följer reglaget, glaset hålls synligt även i röntgenläge
   kaross.userData.opacitet = (v) => {
     kaross.visible = v > 0.001;
     const satt = (m, o) => { m.opacity = o; const fast = o >= 0.999; m.transparent = !fast; m.depthWrite = fast; m.needsUpdate = true; };
     satt(M.lack, v);
-    for (const k of ['svart', 'innerskarm', 'alu', 'krom', 'skylt']) satt(M[k], v);
+    for (const k of ['svart', 'alu', 'krom', 'skylt']) satt(M[k], v);
+    // Innerskärm och underrede: kvadratiskt mot reglaget, så att hjulhusen inte blir mörka tunnlar i röntgenläge
+    satt(M.innerskarm, v * v);
     for (const k of ['lyse', 'bak', 'bryn']) satt(M[k], Math.max(0.3, v));
     M.glas.opacity = Math.min(M.glas.userData.bas, 0.12 + 0.7 * v); M.glas.transparent = true; M.glas.depthWrite = false;
     fog.opacity = Math.min(0.8, 0.15 + v);
