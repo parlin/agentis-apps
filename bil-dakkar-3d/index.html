@@ -249,11 +249,14 @@ const GRUPPER = [
   { id: 'drivlina', namn: 'Drivlina', farg: '#9b7ac4' },
   { id: 'chassi', namn: 'Chassi', farg: '#b0956b' },
   { id: 'el', namn: 'El och ljus', farg: '#d0b23e' },
+  { id: 'spolar', namn: 'Spolarsystemet', farg: '#3fa7e0',
+    beskrivning: 'En behållare i höger framskärm med tre pumpar: vindruta, bakruta och strålkastarspolare. Strålkastarspolarnas slang går bakom stötfångaren till båda teleskopmunstyckena.' },
   { id: 'ovrigt', namn: 'Övrigt', farg: '#86a874' },
 ];
 
 const K_ETK = 'realoem.com, ETK-sprängskisser för E91 325xi';
 const K_MATT = 'BMW:s tekniska data för E91 (mått)';
+const K_TIS = 'BMW TIS för E91 325xi (61 62, 61 67, 61 71)';
 
 const DELAR = [
   // ---------------- Motor ----------------
@@ -440,6 +443,40 @@ const DELAR = [
     source: K_ETK + ' (63 11 Strålkastare).', pos: [1.90, 0.635, -0.58], rot: [0, 0.51, 0], form: 'rbox', storlek: [0.10, 0.09, 0.32] },
   { id: 'stralkastare-hoger', namn: 'Strålkastare höger', grupp: 'el', ref: '69', beskrivning: 'Höger strålkastare.',
     source: K_ETK + ' (63 11 Strålkastare).', pos: [1.90, 0.635, 0.58], rot: [0, -0.51, 0], form: 'rbox', storlek: [0.10, 0.09, 0.32] },
+
+  // ---------------- Spolarsystemet (B33, 94) ----------------
+  // Behållaren och pumparna: höger framskärm (TIS). Slangdragningarna är förenklade och ej uppmätta.
+  { id: 'spolar-behallare', namn: 'Spolarvätskebehållare', grupp: 'spolar', ref: '61 B33 · 94', beskrivning: 'Behållaren sitter i höger framskärm, bakom hjulhusfodret framför höger framhjul. Nås genom att ta bort höger sidoblinkers och hjulhusfodret.',
+    source: K_TIS + ' (61 71 061, 61 62 150). Mått ej uppmätta, volym okänd.', approx: true, pos: [1.80, 0.46, 0.68], form: 'rbox', storlek: [0.26, 0.22, 0.13] },
+  { id: 'spolar-pumpar', namn: 'Spolarpumpar (tre) och nivåvakt', grupp: 'spolar', ref: '94', beskrivning: 'Tre pumpar nedtill på behållaren, var och en i en gummitätning: strålkastarspolare, vindruta och bakruta. Plus nivåvakten. Gummitätningarna är en vanlig läckpunkt.',
+    source: K_TIS + ' (61 67 översikt); ' + K_ETK + ' (61 66 Behållare och pumpar).', approx: true, pos: [1.80, 0.32, 0.68], former: [
+      { form: 'cylinder', pos: [-0.07, 0, 0], storlek: [0.018, 0.08], axel: 'y' },
+      { form: 'cylinder', pos: [0, 0, 0], storlek: [0.018, 0.08], axel: 'y' },
+      { form: 'cylinder', pos: [0.07, 0, 0], storlek: [0.018, 0.08], axel: 'y' },
+    ] },
+  { id: 'spolar-pafyllning', namn: 'Påfyllningsrör med lock', grupp: 'spolar', ref: '94', beskrivning: 'Separat rör från behållaren upp till locket i motorrummet, höger sida.',
+    source: K_ETK + ' (Filler pipe wash container, 61667135409). Lockets exakta läge ej verifierat.', approx: true, former: [
+      { form: 'tube', radie: 0.016, banor: [[[1.80, 0.57, 0.66], [1.74, 0.68, 0.62], [1.66, 0.80, 0.58]]] },
+      { form: 'cylinder', pos: [1.66, 0.82, 0.58], storlek: [0.03, 0.03], axel: 'y' },
+    ], pos: [0, 0, 0] },
+  { id: 'spolar-slang-vindruta', namn: 'Slang till vindrutemunstyckena', grupp: 'spolar', ref: '94', beskrivning: 'Från vindrutepumpen upp längs höger sida till torpedplåten. Munstyckena sitter i torpedplåtens täckpanel, bredvid kupéfiltrets luftintag.',
+    source: K_TIS + ' (61 71 015). Dragningen förenklad.', approx: true, former: [
+      { form: 'tube', radie: 0.006, banor: [[[1.80, 0.29, 0.66], [1.62, 0.55, 0.64], [1.20, 0.86, 0.56], [0.97, 0.99, 0.32], [0.97, 0.99, -0.32]]] },
+      { form: 'box', pos: [0.97, 1.01, 0.30], storlek: [0.03, 0.02, 0.04] },
+      { form: 'box', pos: [0.97, 1.01, -0.30], storlek: [0.03, 0.02, 0.04] },
+    ], pos: [0, 0, 0] },
+  { id: 'spolar-sra-slang', namn: 'Strålkastarspolarnas slang', grupp: 'spolar', ref: '94', beskrivning: 'Från strålkastarspolarnas pump fram och tvärs över bakom stötfångaren till båda munstyckena. Munstyckena sitter lägre än vätskenivån och pumpen håller inte emot, så en läcka här tömmer behållaren medan bilen står.',
+    source: K_ETK + ' (Single parts for head lamp cleaning, slangsats 61677117844). Dragningen bakom stötfångaren ej verifierad.', approx: true, form: 'tube', radie: 0.007,
+    banor: [[[1.84, 0.29, 0.70], [2.06, 0.38, 0.68], [2.14, 0.48, 0.58], [2.15, 0.48, 0.0], [2.14, 0.48, -0.58]]] },
+  { id: 'spolar-munstycke-vanster', namn: 'Strålkastarspolare vänster (misstänkt läcka)', grupp: 'spolar', ref: '61 B33 · 94', beskrivning: 'Teleskopmunstycke i stötfångaren under vänster strålkastare. Huvudmisstanke för läckan 2026-11-08 (ca 45 %): stora fläcken ligger vänster, och rinnspåret börjar inifrån vänster stötfångarhörn. Nås via främre hjulhusfodret.',
+    source: K_TIS + ' (61 67 083, munstycke 61677179311). Läckläget är en bedömning, inte en diagnos.', approx: true, pos: [2.15, 0.56, -0.58], form: 'cylinder', storlek: [0.025, 0.10], axel: 'x' },
+  { id: 'spolar-munstycke-hoger', namn: 'Strålkastarspolare höger', grupp: 'spolar', ref: '94', beskrivning: 'Teleskopmunstycke i stötfångaren under höger strålkastare. Kan förklara den lilla fläcken till höger.',
+    source: K_TIS + ' (61 67 083).', approx: true, pos: [2.15, 0.56, 0.58], form: 'cylinder', storlek: [0.025, 0.10], axel: 'x' },
+  { id: 'spolar-slang-bak', namn: 'Slang till bakrutan (dragning okänd)', grupp: 'spolar', ref: '94', beskrivning: 'Från bakrutepumpen fram till höger, genom karossen till munstycket i tredje bromsljuset på bakluckan. Vägen genom kupén är INTE verifierad - linjen är bara en gissning. En forumuppgift säger via D-stolpen ovanför innertaket.',
+    source: K_TIS + ' (61 62 110, 61 62 150). Mellanpartiet är en gissning.', approx: true, former: [
+      { form: 'tube', radie: 0.005, banor: [[[1.76, 0.29, 0.70], [1.30, 0.70, 0.66], [0.90, 1.20, 0.62], [-1.70, 1.38, 0.56], [-2.20, 1.36, 0.10]]] },
+      { form: 'box', pos: [-2.22, 1.40, 0], storlek: [0.04, 0.03, 0.14] },
+    ], pos: [0, 0, 0] },
 
   // ---------------- Övrigt ----------------
   // id behålls från första versionen så att gamla länkar fungerar
